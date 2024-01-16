@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use core::fmt::Debug;
+use core::iter;
 use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-use crypto_bigint::Uint;
+use crypto_bigint::{rand_core::CryptoRngCore, Uint};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
@@ -139,3 +140,22 @@ pub type PublicParameters<G> = <G as GroupElement>::PublicParameters;
 /// A marker-trait for  element of an abelian group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order,
 /// in additive notation.
 pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {}
+
+pub trait Samplable: GroupElement {
+    /// Uniformly sample a random element.
+    fn sample(
+        public_parameters: &Self::PublicParameters,
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Self>;
+
+    /// Uniformly sample a batch of random elements.
+    fn sample_batch(
+        public_parameters: &Self::PublicParameters,
+        batch_size: usize,
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Vec<Self>> {
+        iter::repeat_with(|| Self::sample(public_parameters, rng))
+            .take(batch_size)
+            .collect()
+    }
+}
