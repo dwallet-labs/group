@@ -5,9 +5,9 @@ use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 use crypto_bigint::rand_core::CryptoRngCore;
-use crypto_bigint::{Invert, Uint};
+use crypto_bigint::Uint;
 use serde::{Deserialize, Serialize};
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
@@ -279,4 +279,10 @@ pub trait Samplable: GroupElement {
             .take(batch_size)
             .collect()
     }
+}
+
+/// Perform an inversion on a field element (i.e. base field element or scalar)
+pub trait Invert: Sized {
+    /// Invert a field element.
+    fn invert(&self) -> CtOption<Self>;
 }
