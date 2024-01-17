@@ -1,12 +1,18 @@
 // Author: dWallet Labs, LTD.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+pub mod helpers;
+
+pub mod scalar;
+pub mod self_product;
+
 use core::fmt::Debug;
 use core::iter;
-use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-use crypto_bigint::{rand_core::CryptoRngCore, Uint};
+use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+use crypto_bigint::rand_core::CryptoRngCore;
+use crypto_bigint::Uint;
 use serde::{Deserialize, Serialize};
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
@@ -113,9 +119,7 @@ pub trait GroupElement:
     }
 
     /// Constant-time Multiplication by (any bounded) natural number (scalar)
-    fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self {
-        self.scalar_mul_bounded(scalar, Uint::<LIMBS>::BITS)
-    }
+    fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self;
 
     /// Constant-time Multiplication by (any bounded) natural number (scalar),
     /// with `scalar_bits` representing the number of (least significant) bits
@@ -126,7 +130,21 @@ pub trait GroupElement:
         &self,
         scalar: &Uint<LIMBS>,
         scalar_bits: usize,
-    ) -> Self;
+    ) -> Self {
+        // A bench implementation for groups whose underlying implementation does not expose a
+        // bounded multiplication function, and operates in constant-time. This implementation
+        // simply assures that the only the required bits out of the multiplied value is taken; this
+        // is a correctness adaptation and not a performance one.
+
+        // First take only the `scalar_bits` least significant bits
+        let mask = (Uint::<LIMBS>::ONE << scalar_bits).wrapping_sub(&Uint::<LIMBS>::ONE);
+        let scalar = scalar & mask;
+
+        // Call the underlying scalar mul function, which now only use the `scalar_bits` least
+        // significant bits, but will still take the same time to compute due to
+        // constant-timeness.
+        self.scalar_mul(&scalar)
+    }
 
     /// Double this point in constant-time.
     #[must_use]
@@ -140,6 +158,84 @@ pub type PublicParameters<G> = <G as GroupElement>::PublicParameters;
 /// A marker-trait for  element of an abelian group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order,
 /// in additive notation.
 pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {}
+
+/// An element of a natural numbers group.
+/// This trait encapsulates both known and unknown order number groups, by allowing the group value
+/// to be transitional to and from a bounded natural number.
+///
+/// This way allows us to capture both elliptic curve
+/// scalars (which has their own serialization format captured by their types &
+/// standards, and thus cannot have a `Uint<>` as their `Value`) and hidden-order groups like
+/// Paillier's, where we cannot have `T: From<Uint<>>` as we cannot construct a group element
+/// without the modulus which is specified in the public parameters.
+///
+/// Using `Self::Value` we can convert in and out of numbers, and instantiate group elements in a
+/// unified way using `Self::new()` which receives the public parameters and can fail upon invalid
+/// inputs.
+pub trait NumbersGroupElement<const SCALAR_LIMBS: usize>:
+    GroupElement<Value = Self::ValueExt>
+    + BoundedGroupElement<SCALAR_LIMBS>
+    + Into<Uint<SCALAR_LIMBS>>
+    + Samplable
+{
+    type ValueExt: From<Uint<SCALAR_LIMBS>>
+        + Into<Uint<SCALAR_LIMBS>>
+        + Serialize
+        + for<'r> Deserialize<'r>
+        + Clone
+        + Debug
+        + PartialEq
+        + ConstantTimeEq
+        + ConditionallySelectable
+        + Copy;
+}
+
+impl<
+        const SCALAR_LIMBS: usize,
+        T: GroupElement + BoundedGroupElement<SCALAR_LIMBS> + Into<Uint<SCALAR_LIMBS>> + Samplable,
+    > NumbersGroupElement<SCALAR_LIMBS> for T
+where
+    T::Value: From<Uint<SCALAR_LIMBS>> + Into<Uint<SCALAR_LIMBS>>,
+{
+    type ValueExt = Self::Value;
+}
+
+pub trait KnownOrderScalar<const SCALAR_LIMBS: usize>:
+    KnownOrderGroupElement<SCALAR_LIMBS, Scalar = Self>
+    + NumbersGroupElement<SCALAR_LIMBS>
+    + Mul<Self, Output = Self>
+    + for<'r> Mul<&'r Self, Output = Self>
+    + Invert
+    + Samplable
+    + Copy
+    + Into<Uint<SCALAR_LIMBS>>
+{
+}
+
+/// An element of a known-order abelian group, in additive notation.
+pub trait KnownOrderGroupElement<const SCALAR_LIMBS: usize>:
+    BoundedGroupElement<SCALAR_LIMBS>
+{
+    type Scalar: KnownOrderScalar<SCALAR_LIMBS>
+        + Mul<Self, Output = Self>
+        + for<'r> Mul<&'r Self, Output = Self>;
+
+    /// Returns the order of the group
+    fn order(&self) -> Uint<SCALAR_LIMBS> {
+        Self::order_from_public_parameters(&self.public_parameters())
+    }
+
+    /// Returns the order of the group
+    fn order_from_public_parameters(
+        public_parameters: &Self::PublicParameters,
+    ) -> Uint<SCALAR_LIMBS>;
+}
+
+pub type Scalar<const SCALAR_LIMBS: usize, G> = <G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar;
+pub type ScalarPublicParameters<const SCALAR_LIMBS: usize, G> =
+    PublicParameters<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
+pub type ScalarValue<const SCALAR_LIMBS: usize, G> =
+    Value<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
 
 pub trait Samplable: GroupElement {
     /// Uniformly sample a random element.
@@ -158,4 +254,10 @@ pub trait Samplable: GroupElement {
             .take(batch_size)
             .collect()
     }
+}
+
+/// Perform an inversion on a field element (i.e. base field element or scalar)
+pub trait Invert: Sized {
+    /// Invert a field element.
+    fn invert(&self) -> CtOption<Self>;
 }
