@@ -1,6 +1,8 @@
 // Author: dWallet Labs, LTD.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+pub mod direct_product;
+
 use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
