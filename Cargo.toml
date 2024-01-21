@@ -1,0 +1,15 @@
+[package]
+name = "group"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause-Clear"
+
+[dependencies]
+crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+subtle = { version = "2.5", features = ["const-generics"] }
+thiserror = "1.0.47"
+
+[dev-dependencies]
+
+[features]
