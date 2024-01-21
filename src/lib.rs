@@ -1,6 +1,10 @@
 // Author: dWallet Labs, LTD.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+mod reduce;
+
+pub mod secp256k1;
+
 use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
@@ -8,6 +12,9 @@ use crypto_bigint::rand_core::CryptoRngCore;
 use crypto_bigint::Uint;
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+#[allow(unused_imports)]
+pub(crate) use reduce::Reduce;
 
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]

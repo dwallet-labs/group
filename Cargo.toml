@@ -9,6 +9,7 @@ crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-
 serde = { version = "1.0", features = ["derive"] }
 subtle = { version = "2.5", features = ["const-generics"] }
 thiserror = "1.0.47"
+k256 = { version = "0.13.3", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve"], default-features = false }
 
 [dev-dependencies]
 
