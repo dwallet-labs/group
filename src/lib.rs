@@ -116,9 +116,7 @@ pub trait GroupElement:
     }
 
     /// Constant-time Multiplication by (any bounded) natural number (scalar)
-    fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self {
-        self.scalar_mul_bounded(scalar, Uint::<LIMBS>::BITS)
-    }
+    fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self;
 
     /// Constant-time Multiplication by (any bounded) natural number (scalar),
     /// with `scalar_bits` representing the number of (least significant) bits
@@ -129,7 +127,21 @@ pub trait GroupElement:
         &self,
         scalar: &Uint<LIMBS>,
         scalar_bits: usize,
-    ) -> Self;
+    ) -> Self {
+        // A bench implementation for groups whose underlying implementation does not expose a
+        // bounded multiplication function, and operates in constant-time. This implementation
+        // simply assures that the only the required bits out of the multiplied value is taken; this
+        // is a correctness adaptation and not a performance one.
+
+        // First take only the `scalar_bits` least significant bits
+        let mask = (Uint::<LIMBS>::ONE << scalar_bits).wrapping_sub(&Uint::<LIMBS>::ONE);
+        let scalar = scalar & mask;
+
+        // Call the underlying scalar mul function, which now only use the `scalar_bits` least
+        // significant bits, but will still take the same time to compute due to
+        // constant-timeness.
+        self.scalar_mul(&scalar)
+    }
 
     /// Double this point in constant-time.
     #[must_use]
