@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 mod reduce;
+pub mod ristretto;
 
 use core::fmt::Debug;
 use core::iter;

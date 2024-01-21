@@ -1,0 +1,232 @@
+// Author: dWallet Labs, LTD.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
+use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
+
+use crypto_bigint::{U256, Uint};
+use curve25519_dalek::{
+    constants::RISTRETTO_BASEPOINT_POINT, ristretto::RistrettoPoint, traits::Identity,
+};
+use serde::{Deserialize, Serialize};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+
+use crate::{
+    BoundedGroupElement,
+    CyclicGroupElement, KnownOrderGroupElement, MulByGenerator, PrimeGroupElement,
+    ristretto::{CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER, scalar::Scalar},
+};
+
+use super::SCALAR_LIMBS;
+
+/// An element of the ristretto prime group.
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct GroupElement(pub(crate) RistrettoPoint);
+
+/// The public parameters of the ristretto group.
+#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+pub struct PublicParameters {
+    name: String,
+    curve_type: String,
+    pub order: U256,
+    pub modulus: U256,
+    pub generator: GroupElement,
+    pub curve_equation_a: U256,
+    pub curve_equation_b: U256,
+}
+
+impl Default for PublicParameters {
+    fn default() -> Self {
+        Self {
+            name: "Ristretto".to_string(),
+            curve_type: "Montgomery".to_string(),
+            order: ORDER,
+            modulus: MODULUS,
+            generator: GroupElement(RISTRETTO_BASEPOINT_POINT),
+            curve_equation_a: CURVE_EQUATION_A,
+            curve_equation_b: CURVE_EQUATION_B,
+        }
+    }
+}
+
+impl ConstantTimeEq for GroupElement {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        // There are two `subtle` crates used in various crares in the Rust crypto ecosystem; the
+        // original `dalek` one and `zkcrypto`'s fork. The former being most widely used was chosen
+        // for the group traits, wheras the latter is used in the working `zkcrypto`
+        // `curve25519-dalek-ng` crate used in this code. Therefore, an adaptation between the two
+        // must occur, which is implemented here via unwrapping and wrapping the `u8` inner value of
+        // `Choice`.
+        <RistrettoPoint as subtle_ng::ConstantTimeEq>::ct_eq(&self.0, &other.0)
+            .unwrap_u8()
+            .into()
+    }
+}
+
+impl ConditionallySelectable for GroupElement {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self(
+            <RistrettoPoint as subtle_ng::ConditionallySelectable>::conditional_select(
+                &a.0,
+                &b.0,
+                choice.unwrap_u8().into(),
+            ),
+        )
+    }
+}
+
+impl crate::GroupElement for GroupElement {
+    type Value = Self;
+
+    fn value(&self) -> Self::Value {
+        *self
+    }
+
+    type PublicParameters = PublicParameters;
+
+    fn public_parameters(&self) -> Self::PublicParameters {
+        PublicParameters::default()
+    }
+
+    fn new(value: Self::Value, _public_parameters: &Self::PublicParameters) -> crate::Result<Self> {
+        // `RistrettoPoint` assures deserialized values are on curve,
+        // and `Self` can only be instantiated through deserialization, so
+        // this is always safe.
+        Ok(value)
+    }
+
+    fn neutral(&self) -> Self {
+        Self(RistrettoPoint::identity())
+    }
+
+    fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self {
+        Scalar::from(scalar) * self
+    }
+
+    fn double(&self) -> Self {
+        Self(self.0 + self.0)
+    }
+}
+
+impl From<GroupElement> for PublicParameters {
+    fn from(_value: GroupElement) -> Self {
+        Self::default()
+    }
+}
+
+impl Neg for GroupElement {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self(self.0.neg())
+    }
+}
+
+impl Add<Self> for GroupElement {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0.add(rhs.0))
+    }
+}
+
+impl<'r> Add<&'r Self> for GroupElement {
+    type Output = Self;
+
+    fn add(self, rhs: &'r Self) -> Self::Output {
+        Self(self.0.add(rhs.0))
+    }
+}
+
+impl Sub<Self> for GroupElement {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0.sub(rhs.0))
+    }
+}
+
+impl<'r> Sub<&'r Self> for GroupElement {
+    type Output = Self;
+
+    fn sub(self, rhs: &'r Self) -> Self::Output {
+        Self(self.0.sub(rhs.0))
+    }
+}
+
+impl AddAssign<Self> for GroupElement {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0.add_assign(rhs.0)
+    }
+}
+
+impl<'r> AddAssign<&'r Self> for GroupElement {
+    fn add_assign(&mut self, rhs: &'r Self) {
+        self.0.add_assign(rhs.0)
+    }
+}
+
+impl SubAssign<Self> for GroupElement {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0.sub_assign(rhs.0)
+    }
+}
+
+impl<'r> SubAssign<&'r Self> for GroupElement {
+    fn sub_assign(&mut self, rhs: &'r Self) {
+        self.0.sub_assign(rhs.0)
+    }
+}
+
+impl MulByGenerator<U256> for GroupElement {
+    fn mul_by_generator(&self, scalar: U256) -> Self {
+        self.mul_by_generator(Scalar::from(scalar))
+    }
+}
+
+impl<'r> MulByGenerator<&'r U256> for GroupElement {
+    fn mul_by_generator(&self, scalar: &'r U256) -> Self {
+        self.mul_by_generator(*scalar)
+    }
+}
+
+impl CyclicGroupElement for GroupElement {
+    fn generator(&self) -> Self {
+        Self(RISTRETTO_BASEPOINT_POINT)
+    }
+
+    fn generator_value_from_public_parameters(
+        _public_parameters: &Self::PublicParameters,
+    ) -> Self::Value {
+        Self(RISTRETTO_BASEPOINT_POINT)
+    }
+}
+
+impl BoundedGroupElement<SCALAR_LIMBS> for GroupElement {}
+
+impl KnownOrderGroupElement<SCALAR_LIMBS> for GroupElement {
+    type Scalar = Scalar;
+
+    fn order(&self) -> Uint<SCALAR_LIMBS> {
+        ORDER
+    }
+
+    fn order_from_public_parameters(
+        _public_parameters: &Self::PublicParameters,
+    ) -> Uint<SCALAR_LIMBS> {
+        ORDER
+    }
+}
+
+impl MulByGenerator<Scalar> for GroupElement {
+    fn mul_by_generator(&self, scalar: Scalar) -> Self {
+        scalar * self
+    }
+}
+
+impl<'r> MulByGenerator<&'r Scalar> for GroupElement {
+    fn mul_by_generator(&self, scalar: &'r Scalar) -> Self {
+        scalar * self
+    }
+}
+
+impl PrimeGroupElement<SCALAR_LIMBS> for GroupElement {}
