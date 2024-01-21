@@ -278,7 +278,6 @@ impl<const N: usize, const SCALAR_LIMBS: usize, G: BoundedGroupElement<SCALAR_LI
 }
 
 impl<
-        'r,
         const N: usize,
         const SCALAR_LIMBS: usize,
         S: KnownOrderScalar<SCALAR_LIMBS> + Mul<G, Output = G>,
