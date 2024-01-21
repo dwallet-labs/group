@@ -1,18 +1,20 @@
 // Author: dWallet Labs, LTD.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-pub mod helpers;
-
-pub mod scalar;
-pub mod self_product;
-
 use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+
 use crypto_bigint::rand_core::CryptoRngCore;
 use crypto_bigint::Uint;
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+pub mod helpers;
+
+pub mod self_product;
+
+pub mod scalar;
 
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
@@ -121,6 +123,7 @@ pub trait GroupElement:
     /// Constant-time Multiplication by (any bounded) natural number (scalar)
     fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self;
 
+    /// Constant-time Multiplication by (any bounded) natural number (scalar),
     /// Constant-time Multiplication by (any bounded) natural number (scalar),
     /// with `scalar_bits` representing the number of (least significant) bits
     /// to take into account for the scalar.
