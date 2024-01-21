@@ -1,11 +1,10 @@
 // Author: dWallet Labs, LTD.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-mod reduce;
-
 use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+
 use crypto_bigint::rand_core::CryptoRngCore;
 use crypto_bigint::Uint;
 use serde::{Deserialize, Serialize};
@@ -14,6 +13,10 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 #[allow(unused_imports)]
 pub(crate) use reduce::Reduce;
 
+mod reduce;
+
+pub mod additive;
+
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
 pub enum Error {
@@ -21,7 +24,7 @@ pub enum Error {
     UnsupportedPublicParameters,
 
     #[error(
-        "invalid public parameters: no valid group can be identified by the public parameters."
+    "invalid public parameters: no valid group can be identified by the public parameters."
     )]
     InvalidPublicParameters,
 
@@ -39,21 +42,21 @@ pub type Result<T> = std::result::Result<T, Error>;
 ///
 /// All group operations are guaranteed to be constant time
 pub trait GroupElement:
-    Neg<Output = Self>
-    + Add<Self, Output = Self>
-    + for<'r> Add<&'r Self, Output = Self>
-    + Sub<Self, Output = Self>
-    + for<'r> Sub<&'r Self, Output = Self>
-    + AddAssign<Self>
-    + for<'r> AddAssign<&'r Self>
-    + SubAssign<Self>
-    + for<'r> SubAssign<&'r Self>
-    + Into<Self::Value>
-    + Into<Self::PublicParameters>
-    + Debug
-    + PartialEq
-    + Eq
-    + Clone
+Neg<Output=Self>
++ Add<Self, Output=Self>
++ for<'r> Add<&'r Self, Output=Self>
++ Sub<Self, Output=Self>
++ for<'r> Sub<&'r Self, Output=Self>
++ AddAssign<Self>
++ for<'r> AddAssign<&'r Self>
++ SubAssign<Self>
++ for<'r> SubAssign<&'r Self>
++ Into<Self::Value>
++ Into<Self::PublicParameters>
++ Debug
++ PartialEq
++ Eq
++ Clone
 {
     /// The actual value of the group point used for encoding/decoding.
     ///
@@ -73,14 +76,14 @@ pub trait GroupElement:
     /// In order to mitigate these risks and save on communication, we separate the value of the
     /// point from the group parameters.
     type Value: Serialize
-        + for<'r> Deserialize<'r>
-        + Clone
-        + Debug
-        + PartialEq
-        + Eq
-        + ConstantTimeEq
-        + ConditionallySelectable
-        + Copy;
+    + for<'r> Deserialize<'r>
+    + Clone
+    + Debug
+    + PartialEq
+    + Eq
+    + ConstantTimeEq
+    + ConditionallySelectable
+    + Copy;
 
     /// Returns the value of this group element
     fn value(&self) -> Self::Value {
@@ -173,52 +176,51 @@ pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {}
 /// unified way using `Self::new()` which receives the public parameters and can fail upon invalid
 /// inputs.
 pub trait NumbersGroupElement<const SCALAR_LIMBS: usize>:
-    GroupElement<Value = Self::ValueExt>
-    + BoundedGroupElement<SCALAR_LIMBS>
-    + Into<Uint<SCALAR_LIMBS>>
-    + Samplable
+GroupElement<Value=Self::ValueExt>
++ BoundedGroupElement<SCALAR_LIMBS>
++ Into<Uint<SCALAR_LIMBS>>
++ Samplable
 {
     type ValueExt: From<Uint<SCALAR_LIMBS>>
-        + Into<Uint<SCALAR_LIMBS>>
-        + Serialize
-        + for<'r> Deserialize<'r>
-        + Clone
-        + Debug
-        + PartialEq
-        + ConstantTimeEq
-        + ConditionallySelectable
-        + Copy;
+    + Into<Uint<SCALAR_LIMBS>>
+    + Serialize
+    + for<'r> Deserialize<'r>
+    + Clone
+    + Debug
+    + PartialEq
+    + ConstantTimeEq
+    + ConditionallySelectable
+    + Copy;
 }
 
 impl<
-        const SCALAR_LIMBS: usize,
-        T: GroupElement + BoundedGroupElement<SCALAR_LIMBS> + Into<Uint<SCALAR_LIMBS>> + Samplable,
-    > NumbersGroupElement<SCALAR_LIMBS> for T
-where
-    T::Value: From<Uint<SCALAR_LIMBS>> + Into<Uint<SCALAR_LIMBS>>,
+    const SCALAR_LIMBS: usize,
+    T: GroupElement + BoundedGroupElement<SCALAR_LIMBS> + Into<Uint<SCALAR_LIMBS>> + Samplable,
+> NumbersGroupElement<SCALAR_LIMBS> for T
+    where
+        T::Value: From<Uint<SCALAR_LIMBS>> + Into<Uint<SCALAR_LIMBS>>,
 {
     type ValueExt = Self::Value;
 }
 
 pub trait KnownOrderScalar<const SCALAR_LIMBS: usize>:
-    KnownOrderGroupElement<SCALAR_LIMBS, Scalar = Self>
-    + NumbersGroupElement<SCALAR_LIMBS>
-    + Mul<Self, Output = Self>
-    + for<'r> Mul<&'r Self, Output = Self>
-    + Invert
-    + Samplable
-    + Copy
-    + Into<Uint<SCALAR_LIMBS>>
-{
-}
+KnownOrderGroupElement<SCALAR_LIMBS, Scalar=Self>
++ NumbersGroupElement<SCALAR_LIMBS>
++ Mul<Self, Output=Self>
++ for<'r> Mul<&'r Self, Output=Self>
++ Invert
++ Samplable
++ Copy
++ Into<Uint<SCALAR_LIMBS>>
+{}
 
 /// An element of a known-order abelian group, in additive notation.
 pub trait KnownOrderGroupElement<const SCALAR_LIMBS: usize>:
-    BoundedGroupElement<SCALAR_LIMBS>
+BoundedGroupElement<SCALAR_LIMBS>
 {
     type Scalar: KnownOrderScalar<SCALAR_LIMBS>
-        + Mul<Self, Output = Self>
-        + for<'r> Mul<&'r Self, Output = Self>;
+    + Mul<Self, Output=Self>
+    + for<'r> Mul<&'r Self, Output=Self>;
 
     /// Returns the order of the group
     fn order(&self) -> Uint<SCALAR_LIMBS> {
@@ -233,9 +235,9 @@ pub trait KnownOrderGroupElement<const SCALAR_LIMBS: usize>:
 
 pub type Scalar<const SCALAR_LIMBS: usize, G> = <G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar;
 pub type ScalarPublicParameters<const SCALAR_LIMBS: usize, G> =
-    PublicParameters<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
+PublicParameters<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
 pub type ScalarValue<const SCALAR_LIMBS: usize, G> =
-    Value<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
+Value<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
 
 /// Constant-time multiplication by the generator.
 ///
@@ -272,12 +274,11 @@ pub trait CyclicGroupElement: GroupElement {
 /// Any prime-order group is also cyclic.
 /// In additive notation.
 pub trait PrimeGroupElement<const SCALAR_LIMBS: usize>:
-    KnownOrderGroupElement<SCALAR_LIMBS>
-    + CyclicGroupElement
-    + MulByGenerator<Self::Scalar>
-    + for<'r> MulByGenerator<&'r Self::Scalar>
-{
-}
+KnownOrderGroupElement<SCALAR_LIMBS>
++ CyclicGroupElement
++ MulByGenerator<Self::Scalar>
++ for<'r> MulByGenerator<&'r Self::Scalar>
+{}
 
 pub trait Samplable: GroupElement {
     /// Uniformly sample a random element.
