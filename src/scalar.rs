@@ -74,6 +74,7 @@ impl<const SCALAR_LIMBS: usize, V: From<Uint<SCALAR_LIMBS>>> From<Uint<SCALAR_LI
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl<const SCALAR_LIMBS: usize, V: Into<Uint<SCALAR_LIMBS>>> Into<Uint<SCALAR_LIMBS>> for Value<V> {
     fn into(self) -> Uint<SCALAR_LIMBS> {
         self.0.into()
