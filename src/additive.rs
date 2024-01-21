@@ -4,17 +4,16 @@
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
 use crypto_bigint::{
-    Encoding,
     modular::runtime_mod::{DynResidue, DynResidueParams},
-    NonZero, rand_core::CryptoRngCore, RandomMod, Uint,
+    rand_core::CryptoRngCore,
+    Encoding, NonZero, RandomMod, Uint,
 };
 use serde::{Deserialize, Serialize};
 use subtle::CtOption;
 
 use crate::{
     BoundedGroupElement, CyclicGroupElement, GroupElement as _, Invert, KnownOrderGroupElement,
-    KnownOrderScalar, MulByGenerator, Reduce,
-    Samplable,
+    KnownOrderScalar, MulByGenerator, Reduce, Samplable,
 };
 
 /// An element of the additive group of integers for an odd modulo `n = modulus`
@@ -23,8 +22,8 @@ use crate::{
 pub struct GroupElement<const LIMBS: usize>(DynResidue<LIMBS>);
 
 impl<const LIMBS: usize> Samplable for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     fn sample(
         public_parameters: &Self::PublicParameters,
@@ -41,15 +40,15 @@ impl<const LIMBS: usize> Samplable for GroupElement<LIMBS>
 /// $\mathbb{Z}_n^+$
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub struct PublicParameters<const LIMBS: usize>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     pub modulus: NonZero<Uint<LIMBS>>,
 }
 
 impl<const LIMBS: usize> crate::GroupElement for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     type Value = Uint<LIMBS>;
 
@@ -59,10 +58,7 @@ impl<const LIMBS: usize> crate::GroupElement for GroupElement<LIMBS>
 
     type PublicParameters = PublicParameters<LIMBS>;
 
-    fn new(
-        value: Self::Value,
-        public_parameters: &Self::PublicParameters,
-    ) -> crate::Result<Self> {
+    fn new(value: Self::Value, public_parameters: &Self::PublicParameters) -> crate::Result<Self> {
         Ok(Self(DynResidue::<LIMBS>::new(
             &value,
             DynResidueParams::<LIMBS>::new(&public_parameters.modulus),
@@ -88,8 +84,8 @@ impl<const LIMBS: usize> crate::GroupElement for GroupElement<LIMBS>
 }
 
 impl<const LIMBS: usize> From<GroupElement<LIMBS>> for PublicParameters<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     fn from(value: GroupElement<LIMBS>) -> Self {
         // Montgomery form only works for odd modulus, and this is assured in `DynResidue`
@@ -166,8 +162,8 @@ impl<'r, const LIMBS: usize> SubAssign<&'r Self> for GroupElement<LIMBS> {
 }
 
 impl<const LIMBS: usize> MulByGenerator<Uint<LIMBS>> for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     fn mul_by_generator(&self, scalar: Uint<LIMBS>) -> Self {
         self.mul_by_generator(&scalar)
@@ -175,8 +171,8 @@ impl<const LIMBS: usize> MulByGenerator<Uint<LIMBS>> for GroupElement<LIMBS>
 }
 
 impl<const LIMBS: usize> MulByGenerator<&Uint<LIMBS>> for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     fn mul_by_generator(&self, scalar: &Uint<LIMBS>) -> Self {
         // In the additive group, the generator is 1 and multiplication by it is simply returning
@@ -187,11 +183,12 @@ impl<const LIMBS: usize> MulByGenerator<&Uint<LIMBS>> for GroupElement<LIMBS>
 
 impl<const LIMBS: usize> BoundedGroupElement<LIMBS> for GroupElement<LIMBS> where
     Uint<LIMBS>: Encoding
-{}
+{
+}
 
 impl<const LIMBS: usize> CyclicGroupElement for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     fn generator(&self) -> Self {
         Self(DynResidue::<LIMBS>::one(*self.0.params()))
@@ -237,8 +234,8 @@ impl<'r, const LIMBS: usize> Mul<&'r Self> for &'r GroupElement<LIMBS> {
 }
 
 impl<const LIMBS: usize> Mul<Uint<LIMBS>> for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     type Output = Self;
 
@@ -248,8 +245,8 @@ impl<const LIMBS: usize> Mul<Uint<LIMBS>> for GroupElement<LIMBS>
 }
 
 impl<'r, const LIMBS: usize> Mul<&'r Uint<LIMBS>> for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     type Output = Self;
 
@@ -259,8 +256,8 @@ impl<'r, const LIMBS: usize> Mul<&'r Uint<LIMBS>> for GroupElement<LIMBS>
 }
 
 impl<'r, const LIMBS: usize> Mul<Uint<LIMBS>> for &'r GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     type Output = GroupElement<LIMBS>;
 
@@ -270,8 +267,8 @@ impl<'r, const LIMBS: usize> Mul<Uint<LIMBS>> for &'r GroupElement<LIMBS>
 }
 
 impl<'r, const LIMBS: usize> Mul<&'r Uint<LIMBS>> for &'r GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     type Output = GroupElement<LIMBS>;
 
@@ -293,8 +290,8 @@ impl<'r, const LIMBS: usize> From<&'r GroupElement<LIMBS>> for Uint<LIMBS> {
 }
 
 impl<const LIMBS: usize> Invert for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     fn invert(&self) -> CtOption<Self> {
         let inv = <DynResidue<LIMBS> as crypto_bigint::Invert>::invert(&self.0);
@@ -307,8 +304,8 @@ impl<const LIMBS: usize> Invert for GroupElement<LIMBS>
 impl<const LIMBS: usize> KnownOrderScalar<LIMBS> for GroupElement<LIMBS> where Uint<LIMBS>: Encoding {}
 
 impl<const LIMBS: usize> KnownOrderGroupElement<LIMBS> for GroupElement<LIMBS>
-    where
-        Uint<LIMBS>: Encoding,
+where
+    Uint<LIMBS>: Encoding,
 {
     type Scalar = Self;
 
