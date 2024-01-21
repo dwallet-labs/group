@@ -18,7 +18,7 @@ pub enum Error {
     UnsupportedPublicParameters,
 
     #[error(
-    "invalid public parameters: no valid group can be identified by the public parameters."
+        "invalid public parameters: no valid group can be identified by the public parameters."
     )]
     InvalidPublicParameters,
 
@@ -36,21 +36,21 @@ pub type Result<T> = std::result::Result<T, Error>;
 ///
 /// All group operations are guaranteed to be constant time
 pub trait GroupElement:
-Neg<Output=Self>
-+ Add<Self, Output=Self>
-+ for<'r> Add<&'r Self, Output=Self>
-+ Sub<Self, Output=Self>
-+ for<'r> Sub<&'r Self, Output=Self>
-+ AddAssign<Self>
-+ for<'r> AddAssign<&'r Self>
-+ SubAssign<Self>
-+ for<'r> SubAssign<&'r Self>
-+ Into<Self::Value>
-+ Into<Self::PublicParameters>
-+ Debug
-+ PartialEq
-+ Eq
-+ Clone
+    Neg<Output = Self>
+    + Add<Self, Output = Self>
+    + for<'r> Add<&'r Self, Output = Self>
+    + Sub<Self, Output = Self>
+    + for<'r> Sub<&'r Self, Output = Self>
+    + AddAssign<Self>
+    + for<'r> AddAssign<&'r Self>
+    + SubAssign<Self>
+    + for<'r> SubAssign<&'r Self>
+    + Into<Self::Value>
+    + Into<Self::PublicParameters>
+    + Debug
+    + PartialEq
+    + Eq
+    + Clone
 {
     /// The actual value of the group point used for encoding/decoding.
     ///
@@ -70,14 +70,14 @@ Neg<Output=Self>
     /// In order to mitigate these risks and save on communication, we separate the value of the
     /// point from the group parameters.
     type Value: Serialize
-    + for<'r> Deserialize<'r>
-    + Clone
-    + Debug
-    + PartialEq
-    + Eq
-    + ConstantTimeEq
-    + ConditionallySelectable
-    + Copy;
+        + for<'r> Deserialize<'r>
+        + Clone
+        + Debug
+        + PartialEq
+        + Eq
+        + ConstantTimeEq
+        + ConditionallySelectable
+        + Copy;
 
     /// Returns the value of this group element
     fn value(&self) -> Self::Value {
