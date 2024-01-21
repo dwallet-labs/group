@@ -3,7 +3,7 @@
 
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
-use crypto_bigint::{U256, Uint};
+use crypto_bigint::{Uint, U256};
 use curve25519_dalek::{
     constants::RISTRETTO_BASEPOINT_POINT, ristretto::RistrettoPoint, traits::Identity,
 };
@@ -11,9 +11,9 @@ use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{
-    BoundedGroupElement,
-    CyclicGroupElement, KnownOrderGroupElement, MulByGenerator, PrimeGroupElement,
-    ristretto::{CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER, scalar::Scalar},
+    ristretto::{scalar::Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER},
+    BoundedGroupElement, CyclicGroupElement, KnownOrderGroupElement, MulByGenerator,
+    PrimeGroupElement,
 };
 
 use super::SCALAR_LIMBS;

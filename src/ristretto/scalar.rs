@@ -3,7 +3,7 @@
 
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
-use crypto_bigint::{Encoding, NonZero, rand_core::CryptoRngCore, U256, Uint};
+use crypto_bigint::{rand_core::CryptoRngCore, Encoding, NonZero, Uint, U256};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
