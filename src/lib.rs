@@ -5,9 +5,20 @@ use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 use crypto_bigint::rand_core::CryptoRngCore;
-use crypto_bigint::Uint;
+use crypto_bigint::{Uint, U128, U64};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+/// Represents an unsigned integer sized based on the computation security parameter, denoted as
+/// $\kappa$.
+pub type ComputationalSecuritySizedNumber = U128;
+
+/// Represents an unsigned integer sized based on the statistical security parameter, denoted as
+/// $s$. Configured for 64-bit statistical security using U64.
+pub type StatisticalSecuritySizedNumber = U64;
+
+/// A unique identifier of a party in a MPC protocol.
+pub type PartyID = u16;
 
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
