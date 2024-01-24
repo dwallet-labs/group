@@ -5,16 +5,19 @@ use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
-use crypto_bigint::{rand_core::CryptoRngCore, Uint, U128, U64};
+use crypto_bigint::rand_core::CryptoRngCore;
+use crypto_bigint::{Uint, U128, U64};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[allow(unused_imports)]
 pub(crate) use reduce::Reduce;
 
-mod reduce;
+pub mod helpers;
 
 pub mod additive;
+mod reduce;
+pub mod scalar;
 
 /// Represents an unsigned integer sized based on the computation security parameter, denoted as
 /// $\kappa$.
@@ -262,15 +265,15 @@ pub trait MulByGenerator<T> {
 /// An element of an abelian, cyclic group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order, in
 /// additive notation.
 pub trait CyclicGroupElement: GroupElement {
-    /// Returns the generator of the group
+    /// Returns the generator of the group.
     fn generator(&self) -> Self;
 
-    /// Returns the value of generator of the group
+    /// Returns the value of generator of the group.
     fn generator_value_from_public_parameters(
         public_parameters: &Self::PublicParameters,
     ) -> Self::Value;
 
-    /// Attempts to instantiate the generator of the group
+    /// Attempts to instantiate the generator of the group.
     fn generator_from_public_parameters(
         public_parameters: &Self::PublicParameters,
     ) -> Result<Self> {
