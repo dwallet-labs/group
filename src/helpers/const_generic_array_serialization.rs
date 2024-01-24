@@ -39,7 +39,6 @@ where
     where
         A: SeqAccess<'de>,
     {
-        // can be optimized using MaybeUninit
         let mut data = Vec::with_capacity(N);
         for _ in 0..N {
             match (seq.next_element())? {
