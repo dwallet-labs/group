@@ -10,6 +10,8 @@ use crypto_bigint::{Uint, U128, U64};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
+pub mod scalar;
+
 /// Represents an unsigned integer sized based on the computation security parameter, denoted as
 /// $\kappa$.
 pub type ComputationalSecuritySizedNumber = U128;
