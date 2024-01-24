@@ -256,15 +256,15 @@ pub trait MulByGenerator<T> {
 /// An element of an abelian, cyclic group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order, in
 /// additive notation.
 pub trait CyclicGroupElement: GroupElement {
-    /// Returns the generator of the group
+    /// Returns the generator of the group.
     fn generator(&self) -> Self;
 
-    /// Returns the value of generator of the group
+    /// Returns the value of generator of the group.
     fn generator_value_from_public_parameters(
         public_parameters: &Self::PublicParameters,
     ) -> Self::Value;
 
-    /// Attempts to instantiate the generator of the group
+    /// Attempts to instantiate the generator of the group.
     fn generator_from_public_parameters(
         public_parameters: &Self::PublicParameters,
     ) -> Result<Self> {
