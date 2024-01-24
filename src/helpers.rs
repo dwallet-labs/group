@@ -17,7 +17,7 @@ impl<const N: usize, T, E: fmt::Debug> FlatMapResults<T, E> for [Result<T, E>; N
     fn flat_map_results(self) -> Result<Self::Output, E> {
         let res: Result<Vec<T>, E> = self.into_iter().collect();
 
-        // We know the vector is of the right size, so this is safe to unwrap
+        // We know the vector is of the right size, so this is safe to unwrap.
         res.map(|vec| vec.try_into().ok().unwrap())
     }
 }
