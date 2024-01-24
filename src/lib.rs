@@ -4,10 +4,26 @@
 pub mod helpers;
 
 use core::fmt::Debug;
-use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-use crypto_bigint::Uint;
+use core::iter;
+use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+
+use crypto_bigint::rand_core::CryptoRngCore;
+use crypto_bigint::{Uint, U128, U64};
 use serde::{Deserialize, Serialize};
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+pub mod scalar;
+
+/// Represents an unsigned integer sized based on the computation security parameter, denoted as
+/// $\kappa$.
+pub type ComputationalSecuritySizedNumber = U128;
+
+/// Represents an unsigned integer sized based on the statistical security parameter, denoted as
+/// $s$. Configured for 64-bit statistical security using U64.
+pub type StatisticalSecuritySizedNumber = U64;
+
+/// A unique identifier of a party in a MPC protocol.
+pub type PartyID = u16;
 
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
@@ -153,3 +169,148 @@ pub type PublicParameters<G> = <G as GroupElement>::PublicParameters;
 /// A marker-trait for  element of an abelian group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order,
 /// in additive notation.
 pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {}
+
+/// An element of a natural numbers group.
+/// This trait encapsulates both known and unknown order number groups, by allowing the group value
+/// to be transitional to and from a bounded natural number.
+///
+/// This way allows us to capture both elliptic curve
+/// scalars (which has their own serialization format captured by their types &
+/// standards, and thus cannot have a `Uint<>` as their `Value`) and hidden-order groups like
+/// Paillier's, where we cannot have `T: From<Uint<>>` as we cannot construct a group element
+/// without the modulus which is specified in the public parameters.
+///
+/// Using `Self::Value` we can convert in and out of numbers, and instantiate group elements in a
+/// unified way using `Self::new()` which receives the public parameters and can fail upon invalid
+/// inputs.
+pub trait NumbersGroupElement<const SCALAR_LIMBS: usize>:
+    GroupElement<Value = Self::ValueExt>
+    + BoundedGroupElement<SCALAR_LIMBS>
+    + Into<Uint<SCALAR_LIMBS>>
+    + Samplable
+{
+    type ValueExt: From<Uint<SCALAR_LIMBS>>
+        + Into<Uint<SCALAR_LIMBS>>
+        + Serialize
+        + for<'r> Deserialize<'r>
+        + Clone
+        + Debug
+        + PartialEq
+        + ConstantTimeEq
+        + ConditionallySelectable
+        + Copy;
+}
+
+impl<
+        const SCALAR_LIMBS: usize,
+        T: GroupElement + BoundedGroupElement<SCALAR_LIMBS> + Into<Uint<SCALAR_LIMBS>> + Samplable,
+    > NumbersGroupElement<SCALAR_LIMBS> for T
+where
+    T::Value: From<Uint<SCALAR_LIMBS>> + Into<Uint<SCALAR_LIMBS>>,
+{
+    type ValueExt = Self::Value;
+}
+
+pub trait KnownOrderScalar<const SCALAR_LIMBS: usize>:
+    KnownOrderGroupElement<SCALAR_LIMBS, Scalar = Self>
+    + NumbersGroupElement<SCALAR_LIMBS>
+    + Mul<Self, Output = Self>
+    + for<'r> Mul<&'r Self, Output = Self>
+    + Invert
+    + Samplable
+    + Copy
+    + Into<Uint<SCALAR_LIMBS>>
+{
+}
+
+/// An element of a known-order abelian group, in additive notation.
+pub trait KnownOrderGroupElement<const SCALAR_LIMBS: usize>:
+    BoundedGroupElement<SCALAR_LIMBS>
+{
+    type Scalar: KnownOrderScalar<SCALAR_LIMBS>
+        + Mul<Self, Output = Self>
+        + for<'r> Mul<&'r Self, Output = Self>;
+
+    /// Returns the order of the group
+    fn order(&self) -> Uint<SCALAR_LIMBS> {
+        Self::order_from_public_parameters(&self.public_parameters())
+    }
+
+    /// Returns the order of the group
+    fn order_from_public_parameters(
+        public_parameters: &Self::PublicParameters,
+    ) -> Uint<SCALAR_LIMBS>;
+}
+
+pub type Scalar<const SCALAR_LIMBS: usize, G> = <G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar;
+pub type ScalarPublicParameters<const SCALAR_LIMBS: usize, G> =
+    PublicParameters<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
+pub type ScalarValue<const SCALAR_LIMBS: usize, G> =
+    Value<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
+
+/// Constant-time multiplication by the generator.
+///
+/// May use optimizations (e.g. precomputed tables) when available.
+pub trait MulByGenerator<T> {
+    /// Multiply by the generator of the cyclic group in constant-time.
+    #[must_use]
+    fn mul_by_generator(&self, scalar: T) -> Self;
+}
+
+/// An element of an abelian, cyclic group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order, in
+/// additive notation.
+pub trait CyclicGroupElement: GroupElement {
+    /// Returns the generator of the group.
+    fn generator(&self) -> Self;
+
+    /// Returns the value of generator of the group.
+    fn generator_value_from_public_parameters(
+        public_parameters: &Self::PublicParameters,
+    ) -> Self::Value;
+
+    /// Attempts to instantiate the generator of the group.
+    fn generator_from_public_parameters(
+        public_parameters: &Self::PublicParameters,
+    ) -> Result<Self> {
+        Self::new(
+            Self::generator_value_from_public_parameters(public_parameters),
+            public_parameters,
+        )
+    }
+}
+
+/// A marker trait for elements of a (known) prime-order group.
+/// Any prime-order group is also cyclic.
+/// In additive notation.
+pub trait PrimeGroupElement<const SCALAR_LIMBS: usize>:
+    KnownOrderGroupElement<SCALAR_LIMBS>
+    + CyclicGroupElement
+    + MulByGenerator<Self::Scalar>
+    + for<'r> MulByGenerator<&'r Self::Scalar>
+{
+}
+
+pub trait Samplable: GroupElement {
+    /// Uniformly sample a random element.
+    fn sample(
+        public_parameters: &Self::PublicParameters,
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Self>;
+
+    /// Uniformly sample a batch of random elements.
+    fn sample_batch(
+        public_parameters: &Self::PublicParameters,
+        batch_size: usize,
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Vec<Self>> {
+        iter::repeat_with(|| Self::sample(public_parameters, rng))
+            .take(batch_size)
+            .collect()
+    }
+}
+
+/// Perform an inversion on a field element (i.e. base field element or scalar)
+pub trait Invert: Sized {
+    /// Invert a field element.
+    fn invert(&self) -> CtOption<Self>;
+}
