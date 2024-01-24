@@ -17,7 +17,7 @@ use crate::{
 };
 
 /// An element of the additive group of integers for an odd modulo `n = modulus`
-/// $\mathbb{Z}_n^+$
+/// $\mathbb{Z}_n^+$.
 #[derive(PartialEq, Eq, Clone, Debug, Copy)]
 pub struct GroupElement<const LIMBS: usize>(DynResidue<LIMBS>);
 
@@ -37,7 +37,7 @@ where
 }
 
 /// The public parameters of the additive group of integers modulo `n = modulus`
-/// $\mathbb{Z}_n^+$
+/// $\mathbb{Z}_n^+$.
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub struct PublicParameters<const LIMBS: usize>
 where
