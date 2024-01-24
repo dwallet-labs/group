@@ -15,6 +15,7 @@ pub(crate) use reduce::Reduce;
 
 pub mod helpers;
 
+pub mod additive;
 mod reduce;
 pub mod scalar;
 
