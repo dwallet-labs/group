@@ -4,6 +4,7 @@
 use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+
 use crypto_bigint::rand_core::CryptoRngCore;
 use crypto_bigint::{Uint, U128, U64};
 use serde::{Deserialize, Serialize};
@@ -242,6 +243,48 @@ pub type ScalarPublicParameters<const SCALAR_LIMBS: usize, G> =
     PublicParameters<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
 pub type ScalarValue<const SCALAR_LIMBS: usize, G> =
     Value<<G as KnownOrderGroupElement<SCALAR_LIMBS>>::Scalar>;
+
+/// Constant-time multiplication by the generator.
+///
+/// May use optimizations (e.g. precomputed tables) when available.
+pub trait MulByGenerator<T> {
+    /// Multiply by the generator of the cyclic group in constant-time.
+    #[must_use]
+    fn mul_by_generator(&self, scalar: T) -> Self;
+}
+
+/// An element of an abelian, cyclic group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order, in
+/// additive notation.
+pub trait CyclicGroupElement: GroupElement {
+    /// Returns the generator of the group.
+    fn generator(&self) -> Self;
+
+    /// Returns the value of generator of the group.
+    fn generator_value_from_public_parameters(
+        public_parameters: &Self::PublicParameters,
+    ) -> Self::Value;
+
+    /// Attempts to instantiate the generator of the group.
+    fn generator_from_public_parameters(
+        public_parameters: &Self::PublicParameters,
+    ) -> Result<Self> {
+        Self::new(
+            Self::generator_value_from_public_parameters(public_parameters),
+            public_parameters,
+        )
+    }
+}
+
+/// A marker trait for elements of a (known) prime-order group.
+/// Any prime-order group is also cyclic.
+/// In additive notation.
+pub trait PrimeGroupElement<const SCALAR_LIMBS: usize>:
+    KnownOrderGroupElement<SCALAR_LIMBS>
+    + CyclicGroupElement
+    + MulByGenerator<Self::Scalar>
+    + for<'r> MulByGenerator<&'r Self::Scalar>
+{
+}
 
 pub trait Samplable: GroupElement {
     /// Uniformly sample a random element.
