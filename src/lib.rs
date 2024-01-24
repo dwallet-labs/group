@@ -1,8 +1,6 @@
 // Author: dWallet Labs, LTD.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-pub mod helpers;
-
 use core::fmt::Debug;
 use core::iter;
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
@@ -12,6 +10,12 @@ use crypto_bigint::{Uint, U128, U64};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
+#[allow(unused_imports)]
+pub(crate) use reduce::Reduce;
+
+pub mod helpers;
+
+mod reduce;
 pub mod scalar;
 
 /// Represents an unsigned integer sized based on the computation security parameter, denoted as
