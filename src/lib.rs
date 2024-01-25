@@ -21,6 +21,7 @@ mod reduce;
 pub mod ristretto;
 pub mod scalar;
 pub mod secp256k1;
+pub mod self_product;
 
 /// Represents an unsigned integer sized based on the computation security parameter, denoted as
 /// $\kappa$.
