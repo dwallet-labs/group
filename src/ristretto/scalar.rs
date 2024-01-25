@@ -3,32 +3,45 @@
 
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
-use crypto_bigint::{rand_core::CryptoRngCore, NonZero, Uint, U256};
-use k256::elliptic_curve::{scalar::FromUintUnchecked, Field};
+use crypto_bigint::{rand_core::CryptoRngCore, Encoding, NonZero, Uint, U256};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use crate::{
-    secp256k1::ORDER, BoundedGroupElement, CyclicGroupElement, Invert, KnownOrderGroupElement,
+    BoundedGroupElement, CyclicGroupElement, GroupElement as _, Invert, KnownOrderGroupElement,
     KnownOrderScalar, MulByGenerator, PrimeGroupElement, Reduce, Samplable,
 };
 
 use super::{GroupElement, SCALAR_LIMBS};
 
-/// A Scalar of the prime field $\mathbb{Z}_p$ over which the secp256k1 prime group is
+/// A Scalar of the prime field $\mathbb{Z}_p$ over which the ristretto prime group is
 /// defined.
-#[derive(PartialEq, PartialOrd, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Scalar(pub(crate) k256::Scalar);
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct Scalar(pub(crate) curve25519_dalek::scalar::Scalar);
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        // There are two `subtle` crates used across the Rust crypto ecosystem; the
+        // original `dalek` one and `zkcrypto`'s fork. The former being most widely used was chosen
+        // for the group traits, wheras the latter is used in the working `zkcrypto`
+        // `curve25519-dalek-ng` crate used in this code. Therefore, an adaptation between the two
+        // must occur, which is implemented here via unwrapping and wrapping the `u8` inner value of
+        // `Choice`.
+        <curve25519_dalek::scalar::Scalar as subtle_ng::ConstantTimeEq>::ct_eq(&self.0, &other.0)
+            .unwrap_u8()
+            .into()
     }
 }
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(k256::Scalar::conditional_select(&a.0, &b.0, choice))
+        Self(
+            <curve25519_dalek::scalar::Scalar as subtle_ng::ConditionallySelectable>::conditional_select(
+                &a.0,
+                &b.0,
+                choice.unwrap_u8().into(),
+            ),
+        )
     }
 }
 
@@ -37,11 +50,11 @@ impl Samplable for Scalar {
         _public_parameters: &Self::PublicParameters,
         rng: &mut impl CryptoRngCore,
     ) -> crate::Result<Self> {
-        Ok(Self(k256::Scalar::random(rng)))
+        Ok(Self(curve25519_dalek::scalar::Scalar::random(rng)))
     }
 }
 
-/// The public parameters of the secp256k1 scalar field.
+/// The public parameters of the ristretto scalar field.
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub struct PublicParameters {
     name: String,
@@ -53,8 +66,8 @@ impl Default for PublicParameters {
     fn default() -> Self {
         PublicParameters {
             name: "The finite field of integers modulo prime q $\\mathbb{Z}_q$".to_string(),
-            order: ORDER,
-            generator: Scalar(k256::Scalar::ONE),
+            order: super::ORDER,
+            generator: Scalar(curve25519_dalek::scalar::Scalar::one()),
         }
     }
 }
@@ -73,12 +86,13 @@ impl crate::GroupElement for Scalar {
     }
 
     fn new(value: Self::Value, _public_parameters: &Self::PublicParameters) -> crate::Result<Self> {
-        // Since `k256::Scalar` assures deserialized values are valid, this is always safe.
+        // Since `curve25519_dalek::scalar::Scalar` assures deserialized values are valid, this is
+        // always safe.
         Ok(value)
     }
 
     fn neutral(&self) -> Self {
-        Self(k256::Scalar::ZERO)
+        Self(curve25519_dalek::scalar::Scalar::zero())
     }
 
     fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self {
@@ -86,7 +100,7 @@ impl crate::GroupElement for Scalar {
     }
 
     fn double(&self) -> Self {
-        Self(<k256::Scalar as Field>::double(&self.0))
+        Self(self.0 + self.0)
     }
 }
 
@@ -100,13 +114,15 @@ impl BoundedGroupElement<SCALAR_LIMBS> for Scalar {}
 
 impl<const LIMBS: usize> From<Uint<LIMBS>> for Scalar {
     fn from(value: Uint<LIMBS>) -> Self {
-        let value = if LIMBS < SCALAR_LIMBS {
-            (&value).into()
+        let value: U256 = if LIMBS > U256::LIMBS {
+            value.reduce(&NonZero::new(super::ORDER).unwrap())
         } else {
-            value.reduce(&NonZero::new(ORDER).unwrap())
+            (&value).into()
         };
 
-        Self(k256::Scalar::from_uint_unchecked(value))
+        Self(curve25519_dalek::scalar::Scalar::from_bytes_mod_order(
+            value.to_le_bytes(),
+        ))
     }
 }
 
@@ -118,13 +134,13 @@ impl<const LIMBS: usize> From<&Uint<LIMBS>> for Scalar {
 
 impl From<Scalar> for U256 {
     fn from(value: Scalar) -> Self {
-        value.0.into()
+        (&value).into()
     }
 }
 
 impl From<&Scalar> for U256 {
     fn from(value: &Scalar) -> Self {
-        value.0.into()
+        U256::from_le_bytes(*value.0.as_bytes())
     }
 }
 
@@ -261,9 +277,7 @@ impl MulByGenerator<U256> for Scalar {
         // In the additive scalar group, our generator is 1 and multiplying a group element by it
         // results in that same element. However, a `U256` might be bigger than the field
         // order, so we must first reduce it by the modulus to get a valid element.
-        Self(k256::Scalar::from_uint_unchecked(
-            scalar.reduce(&NonZero::new(ORDER).unwrap()),
-        ))
+        scalar.into()
     }
 }
 
@@ -275,19 +289,19 @@ impl<'r> MulByGenerator<&'r U256> for Scalar {
 
 impl CyclicGroupElement for Scalar {
     fn generator(&self) -> Self {
-        Scalar(k256::Scalar::ONE)
+        Scalar(curve25519_dalek::scalar::Scalar::one())
     }
 
     fn generator_value_from_public_parameters(
         _public_parameters: &Self::PublicParameters,
     ) -> Self::Value {
-        Scalar(k256::Scalar::ONE)
+        Scalar(curve25519_dalek::scalar::Scalar::one())
     }
 }
 
 impl Invert for Scalar {
     fn invert(&self) -> CtOption<Self> {
-        <k256::Scalar as k256::elliptic_curve::ops::Invert>::invert(&self.0).map(Self)
+        CtOption::new(Self(self.0.invert()), !self.is_neutral())
     }
 }
 
@@ -296,13 +310,13 @@ impl KnownOrderScalar<SCALAR_LIMBS> for Scalar {}
 impl KnownOrderGroupElement<SCALAR_LIMBS> for Scalar {
     type Scalar = Self;
     fn order(&self) -> Uint<SCALAR_LIMBS> {
-        ORDER
+        super::ORDER
     }
 
     fn order_from_public_parameters(
         _public_parameters: &Self::PublicParameters,
     ) -> Uint<SCALAR_LIMBS> {
-        ORDER
+        super::ORDER
     }
 }
 
