@@ -1,4 +1,4 @@
-// Author: dWallet Labs, LTD.
+// Author: dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use core::fmt::Debug;
@@ -18,6 +18,7 @@ pub mod helpers;
 pub mod additive;
 pub mod direct_product;
 mod reduce;
+pub mod ristretto;
 pub mod scalar;
 pub mod secp256k1;
 
