@@ -16,6 +16,7 @@ pub(crate) use reduce::Reduce;
 pub mod helpers;
 
 pub mod additive;
+pub mod direct_product;
 mod reduce;
 pub mod scalar;
 pub mod secp256k1;
