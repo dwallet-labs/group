@@ -8,11 +8,12 @@ use curve25519_dalek::{
     constants::RISTRETTO_BASEPOINT_POINT, ristretto::RistrettoPoint, traits::Identity,
 };
 use serde::{Deserialize, Serialize};
+use sha3_old::Sha3_512;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{
     ristretto::{scalar::Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER},
-    BoundedGroupElement, CyclicGroupElement, KnownOrderGroupElement, MulByGenerator,
+    BoundedGroupElement, CyclicGroupElement, HashToGroup, KnownOrderGroupElement, MulByGenerator,
     PrimeGroupElement,
 };
 
@@ -230,3 +231,9 @@ impl<'r> MulByGenerator<&'r Scalar> for GroupElement {
 }
 
 impl PrimeGroupElement<SCALAR_LIMBS> for GroupElement {}
+
+impl HashToGroup for GroupElement {
+    fn hash_to_group(bytes: &[u8]) -> crate::Result<Self> {
+        Ok(Self(RistrettoPoint::hash_from_bytes::<Sha3_512>(bytes)))
+    }
+}
