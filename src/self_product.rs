@@ -79,7 +79,7 @@ impl<const N: usize, GroupElementValue: Serialize + for<'a> Deserialize<'a> + Co
     fn ct_eq(&self, other: &Self) -> Choice {
         // The arrays are of the same size so its safe to `zip` them.
         // Following that, we get an array of the pairs, and we assure they are all equal to each
-        // other using `ct_eq` between the pairs and `bitand` between the results
+        // other using `ct_eq` between the pairs and `bitand` between the results,
         self.0
             .iter()
             .zip(other.0.iter())
