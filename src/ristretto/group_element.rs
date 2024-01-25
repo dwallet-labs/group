@@ -129,6 +129,12 @@ impl TryFrom<CompressedRistretto> for GroupElement {
     }
 }
 
+impl From<GroupElement> for RistrettoPoint {
+    fn from(value: GroupElement) -> Self {
+        value.0
+    }
+}
+
 impl Neg for GroupElement {
     type Output = Self;
 
