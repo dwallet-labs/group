@@ -1,4 +1,4 @@
-// Author: dWallet Labs, LTD.
+// Author: dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
@@ -8,11 +8,12 @@ use k256::elliptic_curve::{scalar::FromUintUnchecked, Field};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use super::{GroupElement, SCALAR_LIMBS};
 use crate::{
     secp256k1::ORDER, BoundedGroupElement, CyclicGroupElement, Invert, KnownOrderGroupElement,
     KnownOrderScalar, MulByGenerator, PrimeGroupElement, Reduce, Samplable,
 };
+
+use super::{GroupElement, SCALAR_LIMBS};
 
 /// A Scalar of the prime field $\mathbb{Z}_p$ over which the secp256k1 prime group is
 /// defined.

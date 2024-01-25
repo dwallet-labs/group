@@ -1,20 +1,20 @@
+// Author: dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crypto_bigint::U256;
 
 pub use group_element::GroupElement;
 pub use scalar::Scalar;
 
-// Author: dWallet Labs, LTD.
-// SPDX-License-Identifier: BSD-3-Clause-Clear
 pub mod group_element;
 pub mod scalar;
 
 pub const SCALAR_LIMBS: usize = U256::LIMBS;
 
-/// The order `q` of the ristretto group
+/// The order `q` of the ristretto group.
 pub const ORDER: U256 =
     U256::from_be_hex("1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed");
 
-/// The modulus `p` of the ristretto group
+/// The modulus `p` of the ristretto group.
 pub const MODULUS: U256 =
     U256::from_be_hex("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed");
 
