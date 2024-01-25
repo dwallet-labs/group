@@ -19,6 +19,7 @@ pub mod additive;
 pub mod direct_product;
 mod reduce;
 pub mod scalar;
+pub mod secp256k1;
 
 /// Represents an unsigned integer sized based on the computation security parameter, denoted as
 /// $\kappa$.
