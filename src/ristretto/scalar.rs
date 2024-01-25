@@ -145,6 +145,12 @@ impl From<&Scalar> for U256 {
     }
 }
 
+impl From<Scalar> for curve25519_dalek::scalar::Scalar {
+    fn from(value: Scalar) -> Self {
+        value.0
+    }
+}
+
 impl Neg for Scalar {
     type Output = Self;
 
