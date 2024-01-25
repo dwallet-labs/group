@@ -4,6 +4,7 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
 use crypto_bigint::{Uint, U256};
+use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::{
     constants::RISTRETTO_BASEPOINT_POINT, ristretto::RistrettoPoint, traits::Identity,
 };
@@ -111,6 +112,20 @@ impl crate::GroupElement for GroupElement {
 impl From<GroupElement> for PublicParameters {
     fn from(_value: GroupElement) -> Self {
         Self::default()
+    }
+}
+
+impl TryFrom<CompressedRistretto> for GroupElement {
+    type Error = crate::Error;
+
+    fn try_from(value: CompressedRistretto) -> Result<Self, Self::Error> {
+        // `decompress` ensures the point is on curve. From the documentation: "Return
+        // * Some(RistrettoPoint) if self was the canonical encoding of a point;
+        // * None if self was not the canonical encoding of a point."
+        value
+            .decompress()
+            .map(Self)
+            .ok_or(crate::Error::InvalidGroupElement)
     }
 }
 
