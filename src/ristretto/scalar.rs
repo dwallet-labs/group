@@ -21,7 +21,7 @@ pub struct Scalar(pub(crate) curve25519_dalek::scalar::Scalar);
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        // There are two `subtle` crates used in various crares in the Rust crypto ecosystem; the
+        // There are two `subtle` crates used across the Rust crypto ecosystem; the
         // original `dalek` one and `zkcrypto`'s fork. The former being most widely used was chosen
         // for the group traits, wheras the latter is used in the working `zkcrypto`
         // `curve25519-dalek-ng` crate used in this code. Therefore, an adaptation between the two
