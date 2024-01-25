@@ -18,7 +18,7 @@ use super::{GroupElement, SCALAR_LIMBS};
 /// A Scalar of the prime field $\mathbb{Z}_p$ over which the ristretto prime group is
 /// defined.
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Scalar(pub(crate) curve25519_dalek::scalar::Scalar);
+pub struct Scalar(curve25519_dalek::scalar::Scalar);
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {

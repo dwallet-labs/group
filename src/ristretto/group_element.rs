@@ -21,7 +21,7 @@ use super::SCALAR_LIMBS;
 
 /// An element of the ristretto prime group.
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct GroupElement(pub(crate) RistrettoPoint);
+pub struct GroupElement(pub(super) RistrettoPoint);
 
 /// The public parameters of the ristretto group.
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
