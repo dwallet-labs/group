@@ -333,9 +333,9 @@ pub trait HashToGroup: GroupElement {
     /// `bytes` and returns a `GroupElement` of type `Self`.
     ///
     /// This method *uniformly* encodes `data` to the group. That is, the distribution of its
-    /// output is statistically close to uniform in G, so that the
-    /// discrete log of the output point with respect to any other
-    /// point should be unknown, which is an important trait e.g. for choosing commitment
-    /// generators, as in `Pedersen`.
+    /// output is statistically close to uniform over G. In addition
+    /// discrete log of the output point with respect to any other predetermined
+    /// group element should be infeasible to compute. This is an important trait e.g. for choosing commitment
+    /// generators, as in `Pedersen`, where descrete log relations between the generators must be kept hidden.
     fn hash_to_group(bytes: &[u8]) -> Result<Self>;
 }
