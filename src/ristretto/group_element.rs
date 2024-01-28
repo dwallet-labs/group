@@ -4,15 +4,17 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
 use crypto_bigint::{Uint, U256};
+use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::{
     constants::RISTRETTO_BASEPOINT_POINT, ristretto::RistrettoPoint, traits::Identity,
 };
 use serde::{Deserialize, Serialize};
+use sha3_old::Sha3_512;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{
     ristretto::{scalar::Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER},
-    BoundedGroupElement, CyclicGroupElement, KnownOrderGroupElement, MulByGenerator,
+    BoundedGroupElement, CyclicGroupElement, HashToGroup, KnownOrderGroupElement, MulByGenerator,
     PrimeGroupElement,
 };
 
@@ -20,7 +22,7 @@ use super::SCALAR_LIMBS;
 
 /// An element of the ristretto prime group.
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct GroupElement(pub(crate) RistrettoPoint);
+pub struct GroupElement(pub(super) RistrettoPoint);
 
 /// The public parameters of the ristretto group.
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
@@ -110,6 +112,26 @@ impl crate::GroupElement for GroupElement {
 impl From<GroupElement> for PublicParameters {
     fn from(_value: GroupElement) -> Self {
         Self::default()
+    }
+}
+
+impl TryFrom<CompressedRistretto> for GroupElement {
+    type Error = crate::Error;
+
+    fn try_from(value: CompressedRistretto) -> Result<Self, Self::Error> {
+        // `decompress` ensures the point is on curve. From the documentation: "Return
+        // * Some(RistrettoPoint) if self was the canonical encoding of a point;
+        // * None if self was not the canonical encoding of a point."
+        value
+            .decompress()
+            .map(Self)
+            .ok_or(crate::Error::InvalidGroupElement)
+    }
+}
+
+impl From<GroupElement> for RistrettoPoint {
+    fn from(value: GroupElement) -> Self {
+        value.0
     }
 }
 
@@ -230,3 +252,9 @@ impl<'r> MulByGenerator<&'r Scalar> for GroupElement {
 }
 
 impl PrimeGroupElement<SCALAR_LIMBS> for GroupElement {}
+
+impl HashToGroup for GroupElement {
+    fn hash_to_group(bytes: &[u8]) -> crate::Result<Self> {
+        Ok(Self(RistrettoPoint::hash_from_bytes::<Sha3_512>(bytes)))
+    }
+}

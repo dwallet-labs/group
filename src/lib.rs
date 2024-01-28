@@ -47,6 +47,9 @@ pub enum Error {
 
     #[error("invalid group element: the value does not belong to the group identified by the public parameters.")]
     InvalidGroupElement,
+
+    #[error("hash to group: failed to encode bytes to a group element.")]
+    HashToGroup,
 }
 
 /// The Result of the `new()` operation of types implementing the `GroupElement` trait
@@ -322,4 +325,17 @@ pub trait Samplable: GroupElement {
 pub trait Invert: Sized {
     /// Invert a field element.
     fn invert(&self) -> CtOption<Self>;
+}
+
+/// Uniform encoding of arbitrary sequences of bytes to group elements.
+pub trait HashToGroup: GroupElement {
+    /// Computes the hash to group (a.k.a hash2curve) routine, which takes an arbitrary sequence of
+    /// `bytes` and returns a `GroupElement` of type `Self`.
+    ///
+    /// This method *uniformly* encodes `data` to the group. That is, the distribution of its
+    /// output is statistically close to uniform over G. In addition
+    /// discrete log of the output point with respect to any other predetermined
+    /// group element should be infeasible to compute. This is an important trait e.g. for choosing commitment
+    /// generators, as in `Pedersen`, where descrete log relations between the generators must be kept hidden.
+    fn hash_to_group(bytes: &[u8]) -> Result<Self>;
 }

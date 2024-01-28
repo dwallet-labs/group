@@ -5,11 +5,12 @@ use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
 use crypto_bigint::{rand_core::CryptoRngCore, Encoding, NonZero, Uint, U256};
 use serde::{Deserialize, Serialize};
+use sha3_old::Sha3_512;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use crate::{
-    BoundedGroupElement, CyclicGroupElement, GroupElement as _, Invert, KnownOrderGroupElement,
-    KnownOrderScalar, MulByGenerator, PrimeGroupElement, Reduce, Samplable,
+    BoundedGroupElement, CyclicGroupElement, GroupElement as _, HashToGroup, Invert,
+    KnownOrderGroupElement, KnownOrderScalar, MulByGenerator, PrimeGroupElement, Reduce, Samplable,
 };
 
 use super::{GroupElement, SCALAR_LIMBS};
@@ -17,7 +18,7 @@ use super::{GroupElement, SCALAR_LIMBS};
 /// A Scalar of the prime field $\mathbb{Z}_p$ over which the ristretto prime group is
 /// defined.
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Scalar(pub(crate) curve25519_dalek::scalar::Scalar);
+pub struct Scalar(curve25519_dalek::scalar::Scalar);
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
@@ -141,6 +142,12 @@ impl From<Scalar> for U256 {
 impl From<&Scalar> for U256 {
     fn from(value: &Scalar) -> Self {
         U256::from_le_bytes(*value.0.as_bytes())
+    }
+}
+
+impl From<Scalar> for curve25519_dalek::scalar::Scalar {
+    fn from(value: Scalar) -> Self {
+        value.0
     }
 }
 
@@ -335,3 +342,11 @@ impl<'r> MulByGenerator<&'r Scalar> for Scalar {
 }
 
 impl PrimeGroupElement<SCALAR_LIMBS> for Scalar {}
+
+impl HashToGroup for Scalar {
+    fn hash_to_group(bytes: &[u8]) -> crate::Result<Self> {
+        Ok(Self(curve25519_dalek::scalar::Scalar::hash_from_bytes::<
+            Sha3_512,
+        >(bytes)))
+    }
+}
