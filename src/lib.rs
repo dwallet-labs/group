@@ -105,9 +105,18 @@ pub trait GroupElement:
         + ConditionallySelectable
         + Copy;
 
-    /// Returns the value of this group element
+    /// Returns the value of this group element.
     fn value(&self) -> Self::Value {
         self.clone().into()
+    }
+
+    /// Perform a batched conversion of group elements to their values.
+    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
+        // default to a trivial implementation.
+        group_elements
+            .iter()
+            .map(|group_element| group_element.value())
+            .collect()
     }
 
     /// The public parameters of the group, used for group operations.
@@ -338,16 +347,4 @@ pub trait HashToGroup: GroupElement {
     /// group element should be infeasible to compute. This is an important trait e.g. for choosing commitment
     /// generators, as in `Pedersen`, where descrete log relations between the generators must be kept hidden.
     fn hash_to_group(bytes: &[u8]) -> Result<Self>;
-}
-
-/// Efficient Batch Normalization.
-pub trait BatchNormalize: GroupElement {
-    /// Perform a batched conversion from the group element representation to the value representation.
-    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
-        // default to a trivial implementation.
-        group_elements
-            .iter()
-            .map(|group_element| group_element.value())
-            .collect()
-    }
 }

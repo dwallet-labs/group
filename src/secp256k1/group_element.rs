@@ -17,8 +17,8 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{
     secp256k1::{scalar::Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER},
-    BatchNormalize, BoundedGroupElement, CyclicGroupElement, HashToGroup, KnownOrderGroupElement,
-    MulByGenerator, PrimeGroupElement,
+    BoundedGroupElement, CyclicGroupElement, HashToGroup, KnownOrderGroupElement, MulByGenerator,
+    PrimeGroupElement,
 };
 
 use super::SCALAR_LIMBS;
@@ -86,6 +86,18 @@ impl crate::GroupElement for GroupElement {
         // As this group element is valid, it's safe to instantiate a `Value`
         // from the valid affine representation.
         Value(self.0.to_affine())
+    }
+
+    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
+        let projective_points: Vec<_> = group_elements
+            .into_iter()
+            .map(|group_element| group_element.0)
+            .collect();
+
+        k256::ProjectivePoint::batch_normalize(projective_points.as_slice())
+            .into_iter()
+            .map(Value)
+            .collect()
     }
 
     type PublicParameters = PublicParameters;
@@ -256,19 +268,5 @@ impl HashToGroup for GroupElement {
         )
         .map_err(|_| crate::Error::HashToGroup)
         .map(Self)
-    }
-}
-
-impl BatchNormalize for GroupElement {
-    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
-        let projective_points: Vec<_> = group_elements
-            .into_iter()
-            .map(|group_element| group_element.0)
-            .collect();
-
-        k256::ProjectivePoint::batch_normalize(projective_points.as_slice())
-            .into_iter()
-            .map(Value)
-            .collect()
     }
 }
