@@ -100,6 +100,14 @@ impl crate::GroupElement for GroupElement {
             .collect()
     }
 
+    fn batch_normalize_const_generic<const N: usize>(
+        group_elements: [Self; N],
+    ) -> [Self::Value; N] {
+        let projective_points = group_elements.map(|group_element| group_element.0);
+        // default to a trivial implementation.
+        k256::ProjectivePoint::batch_normalize(&projective_points).map(Value)
+    }
+
     type PublicParameters = PublicParameters;
 
     fn public_parameters(&self) -> Self::PublicParameters {

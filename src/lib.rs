@@ -119,6 +119,14 @@ pub trait GroupElement:
             .collect()
     }
 
+    /// Perform a batched conversion of group elements to their values.
+    fn batch_normalize_const_generic<const N: usize>(
+        group_elements: [Self; N],
+    ) -> [Self::Value; N] {
+        // default to a trivial implementation.
+        group_elements.map(|group_element| group_element.value())
+    }
+
     /// The public parameters of the group, used for group operations.
     ///
     /// These include both dynamic information for runtime calculations
