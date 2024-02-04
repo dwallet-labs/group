@@ -339,3 +339,15 @@ pub trait HashToGroup: GroupElement {
     /// generators, as in `Pedersen`, where descrete log relations between the generators must be kept hidden.
     fn hash_to_group(bytes: &[u8]) -> Result<Self>;
 }
+
+/// Efficient Batch Normalization.
+pub trait BatchNormalize: GroupElement {
+    /// Perform a batched conversion from the group element representation to the value representation.
+    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
+        // default to a trivial implementation.
+        group_elements
+            .iter()
+            .map(|group_element| group_element.value())
+            .collect()
+    }
+}
