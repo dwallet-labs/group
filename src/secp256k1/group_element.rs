@@ -4,23 +4,25 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
 use crypto_bigint::{Uint, U256};
-use k256::elliptic_curve::hash2curve::{ExpandMsgXof, GroupDigest};
 use k256::{
     elliptic_curve,
-    elliptic_curve::{group::prime::PrimeCurveAffine, Group},
+    elliptic_curve::{
+        group::prime::PrimeCurveAffine,
+        hash2curve::{ExpandMsgXof, GroupDigest},
+        Group,
+    },
     AffinePoint, ProjectivePoint, Secp256k1,
 };
 use serde::{Deserialize, Serialize};
 use sha3::Shake256;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
+use super::SCALAR_LIMBS;
 use crate::{
     secp256k1::{scalar::Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER},
     BoundedGroupElement, CyclicGroupElement, HashToGroup, KnownOrderGroupElement, MulByGenerator,
     PrimeGroupElement,
 };
-
-use super::SCALAR_LIMBS;
 
 /// An element of the secp256k1 prime group.
 #[derive(PartialEq, Eq, Clone, Debug, Copy)]

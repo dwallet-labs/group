@@ -4,21 +4,21 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
 use crypto_bigint::{Uint, U256};
-use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::{
-    constants::RISTRETTO_BASEPOINT_POINT, ristretto::RistrettoPoint, traits::Identity,
+    constants::RISTRETTO_BASEPOINT_POINT,
+    ristretto::{CompressedRistretto, RistrettoPoint},
+    traits::Identity,
 };
 use serde::{Deserialize, Serialize};
 use sha3_old::Sha3_512;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
+use super::SCALAR_LIMBS;
 use crate::{
     ristretto::{scalar::Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER},
     BoundedGroupElement, CyclicGroupElement, HashToGroup, KnownOrderGroupElement, MulByGenerator,
     PrimeGroupElement,
 };
-
-use super::SCALAR_LIMBS;
 
 /// An element of the ristretto prime group.
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]

@@ -8,12 +8,11 @@ use k256::elliptic_curve::{scalar::FromUintUnchecked, Field};
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
+use super::{GroupElement, SCALAR_LIMBS};
 use crate::{
     secp256k1::ORDER, BoundedGroupElement, CyclicGroupElement, Invert, KnownOrderGroupElement,
     KnownOrderScalar, MulByGenerator, PrimeGroupElement, Reduce, Samplable,
 };
-
-use super::{GroupElement, SCALAR_LIMBS};
 
 /// A Scalar of the prime field $\mathbb{Z}_p$ over which the secp256k1 prime group is
 /// defined.
@@ -140,7 +139,7 @@ impl Add<Self> for Scalar {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0.add(rhs.0))
+        Self(self.0.add(&rhs.0))
     }
 }
 
@@ -156,7 +155,7 @@ impl Sub<Self> for Scalar {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0.sub(rhs.0))
+        Self(self.0.sub(&rhs.0))
     }
 }
 
@@ -196,7 +195,7 @@ impl Mul<Self> for Scalar {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0.mul(rhs.0))
+        Self(self.0.mul(&rhs.0))
     }
 }
 
@@ -212,7 +211,7 @@ impl Mul<Scalar> for &Scalar {
     type Output = Scalar;
 
     fn mul(self, rhs: Scalar) -> Self::Output {
-        Scalar(self.0.mul(rhs.0))
+        Scalar(self.0.mul(&rhs.0))
     }
 }
 

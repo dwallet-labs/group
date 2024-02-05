@@ -1,17 +1,17 @@
 // Author: dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use core::fmt::Debug;
-use core::iter;
-use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+use core::{
+    fmt::Debug,
+    iter,
+    ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
+};
 
-use crypto_bigint::rand_core::CryptoRngCore;
-use crypto_bigint::{Uint, U128, U64};
-use serde::{Deserialize, Serialize};
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
+use crypto_bigint::{rand_core::CryptoRngCore, Uint, U128, U64};
 #[allow(unused_imports)]
 pub(crate) use reduce::Reduce;
+use serde::{Deserialize, Serialize};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 pub mod helpers;
 
@@ -31,13 +31,13 @@ pub type ComputationalSecuritySizedNumber = U128;
 /// $s$. Configured for 64-bit statistical security using U64.
 pub type StatisticalSecuritySizedNumber = U64;
 
-/// A unique identifier of a party in a MPC protocol.
+/// A unique identifier of a party in an MPC protocol.
 pub type PartyID = u16;
 
 /// An error in group element instantiation [`GroupElement::new()`]
 #[derive(thiserror::Error, Clone, Debug, PartialEq)]
 pub enum Error {
-    #[error("unsupported public parameters: the implementation doesn't support the public parameters, whether or not it identifies a valid group.")]
+    #[error("unsupported public parameters: the implementation doesn't support the public parameters, whether it identifies a valid group.")]
     UnsupportedPublicParameters,
 
     #[error(
@@ -52,13 +52,13 @@ pub enum Error {
     HashToGroup,
 }
 
-/// The Result of the `new()` operation of types implementing the `GroupElement` trait
+/// The Result of `new()` operation for types implementing the [`GroupElement`] trait
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// An element of an abelian group, in additive notation.
 ///
-/// Group operations are only valid between elements within the group (otherwise the result is
-/// undefined.)
+/// Group operations are only valid between elements
+/// within the group (otherwise the result is undefined).
 ///
 /// All group operations are guaranteed to be constant time
 pub trait GroupElement:
@@ -80,20 +80,20 @@ pub trait GroupElement:
 {
     /// The actual value of the group point used for encoding/decoding.
     ///
-    /// For some groups (e.g. `group::secp256k1::Secp256k1GroupElement`) the group parameters and
-    /// equations are statically hard-coded into the code, and then they would have `Self::Value
-    /// = Self`.
+    /// For some groups (e.g. [`group::secp256k1::Secp256k1GroupElement`]) the group parameters and
+    /// equations are statically hard-coded into the code,
+    /// and then they would have `Self::Value = Self`.
     ///
-    /// However, other groups (e.g. `group::paillier::PaillierCiphertextGroupElement`) rely on
+    /// However, other groups (e.g. [`group::paillier::PaillierCiphertextGroupElement`]) rely on
     /// dynamic values to determine group operations in runtime (like the Paillier modulus
     /// $N^2$).
     ///
-    /// In those cases, it is both ineffecient communication-wise to serialize these statements
-    /// as they are known by the deserializing side, and even worse it is a security risk as
+    /// In those cases, it is both inefficient communication-wise to serialize these statements
+    /// as they are known by the deserializing side, and even worse, it is a security risk as
     /// malicious actors could try and craft groups in which they can break security assumptions
     /// in order to e.g. bypass zk-proof verification and have the verifier use those groups.
     ///
-    /// In order to mitigate these risks and save on communication, we separate the value of the
+    /// To mitigate these risks and save on communication, we separate the value of the
     /// point from the group parameters.
     type Value: Serialize
         + for<'r> Deserialize<'r>
@@ -113,8 +113,8 @@ pub trait GroupElement:
     /// The public parameters of the group, used for group operations.
     ///
     /// These include both dynamic information for runtime calculations
-    /// (that provides the required context for `Self::new()` alongside the `Self::Value` to
-    /// instantiate a `GroupElement`), as well as static information hardcoded into the code
+    /// (that provides the required context for [`Self::new()`] alongside the [`Self::Value`] to
+    /// instantiate a [`GroupElement`]), and static information hardcoded into the code
     /// (that, together with the dynamic information, uniquely identifies a group and will be used
     /// for Fiat-Shamir Transcripts).
     type PublicParameters: Serialize + for<'r> Deserialize<'r> + Clone + PartialEq + Debug;
@@ -144,7 +144,7 @@ pub trait GroupElement:
     /// Constant-time Multiplication by (any bounded) natural number (scalar)
     fn scalar_mul<const LIMBS: usize>(&self, scalar: &Uint<LIMBS>) -> Self;
 
-    /// Constant-time Multiplication by (any bounded) natural number (scalar),     
+    /// Constant-time Multiplication by (any bounded) natural number (scalar),
     /// with `scalar_bits` representing the number of (least significant) bits
     /// to take into account for the scalar.
     ///
@@ -156,10 +156,10 @@ pub trait GroupElement:
     ) -> Self {
         // A bench implementation for groups whose underlying implementation does not expose a
         // bounded multiplication function, and operates in constant-time. This implementation
-        // simply assures that the only the required bits out of the multiplied value is taken; this
+        // simply assures that only the required bits out of the multiplied value is taken; this
         // is a correctness adaptation and not a performance one.
 
-        // First take only the `scalar_bits` least significant bits
+        // First, take only the `scalar_bits` least significant bits
         let mask = (Uint::<LIMBS>::ONE << scalar_bits).wrapping_sub(&Uint::<LIMBS>::ONE);
         let scalar = scalar & mask;
 
@@ -178,8 +178,8 @@ pub type Value<G> = <G as GroupElement>::Value;
 
 pub type PublicParameters<G> = <G as GroupElement>::PublicParameters;
 
-/// A marker-trait for  element of an abelian group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order,
-/// in additive notation.
+/// A marker-trait for an element of an abelian group of bounded (by [`Uint<SCALAR_LIMBS>::MAX`])
+/// order, in additive notation.
 pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {}
 
 /// An element of a natural numbers group.
@@ -262,7 +262,7 @@ pub type ScalarValue<const SCALAR_LIMBS: usize, G> =
 
 /// Constant-time multiplication by the generator.
 ///
-/// May use optimizations (e.g. precomputed tables) when available.
+/// May use optimizations (e.g., precomputed tables) when available.
 pub trait MulByGenerator<T> {
     /// Multiply by the generator of the cyclic group in constant-time.
     #[must_use]
@@ -321,21 +321,22 @@ pub trait Samplable: GroupElement {
     }
 }
 
-/// Perform an inversion on a field element (i.e. base field element or scalar)
+/// Perform an inversion on a field element (i.e., base field element or scalar)
 pub trait Invert: Sized {
     /// Invert a field element.
     fn invert(&self) -> CtOption<Self>;
 }
 
-/// Uniform encoding of arbitrary sequences of bytes to group elements.
+/// Uniform encoding of arbitrary sequences for bytes to group elements.
 pub trait HashToGroup: GroupElement {
-    /// Computes the hash to group (a.k.a hash2curve) routine, which takes an arbitrary sequence of
-    /// `bytes` and returns a `GroupElement` of type `Self`.
+    /// Computes the hash to group (a.k.a. `hash2curve`) routine, which takes an arbitrary sequence
+    /// of `bytes` and returns a `GroupElement` of type `Self`.
     ///
     /// This method *uniformly* encodes `data` to the group. That is, the distribution of its
-    /// output is statistically close to uniform over G. In addition
+    /// output is statistically close to uniform over G. In addition,
     /// discrete log of the output point with respect to any other predetermined
-    /// group element should be infeasible to compute. This is an important trait e.g. for choosing commitment
-    /// generators, as in `Pedersen`, where descrete log relations between the generators must be kept hidden.
+    /// group element should be infeasible to compute. This is an important trait, e.g., for
+    /// choosing commitment generators, as in `Pedersen`, where discrete log relations between
+    /// the generators must be kept hidden.
     fn hash_to_group(bytes: &[u8]) -> Result<Self>;
 }

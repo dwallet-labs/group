@@ -89,8 +89,9 @@ where
 {
     fn from(value: GroupElement<LIMBS>) -> Self {
         // Montgomery form only works for odd modulus, and this is assured in `DynResidue`
-        // instantiation; therefore, the modulus of an instance can never be zero and it is safe to
-        // `unwrap()`.
+        // instantiation;
+        // therefore, the modulus of an instance can never be zero,
+        // and it is safe to `unwrap()`.
         PublicParameters {
             modulus: NonZero::new(*value.0.params().modulus()).unwrap(),
         }
@@ -109,7 +110,7 @@ impl<const LIMBS: usize> Add<Self> for GroupElement<LIMBS> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0.add(rhs.0))
+        Self(self.0.add(&rhs.0))
     }
 }
 
@@ -117,7 +118,7 @@ impl<'r, const LIMBS: usize> Add<&'r Self> for GroupElement<LIMBS> {
     type Output = Self;
 
     fn add(self, rhs: &'r Self) -> Self::Output {
-        Self(self.0.add(rhs.0))
+        Self(self.0.add(&rhs.0))
     }
 }
 
@@ -125,7 +126,7 @@ impl<const LIMBS: usize> Sub<Self> for GroupElement<LIMBS> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0.sub(rhs.0))
+        Self(self.0.sub(&rhs.0))
     }
 }
 
@@ -133,7 +134,7 @@ impl<'r, const LIMBS: usize> Sub<&'r Self> for GroupElement<LIMBS> {
     type Output = Self;
 
     fn sub(self, rhs: &'r Self) -> Self::Output {
-        Self(self.0.sub(rhs.0))
+        Self(self.0.sub(&rhs.0))
     }
 }
 
@@ -176,7 +177,7 @@ where
 {
     fn mul_by_generator(&self, scalar: &Uint<LIMBS>) -> Self {
         // In the additive group, the generator is 1 and multiplication by it is simply returning
-        // the same number modulu the order (which is taken care of in `DynResidue`.
+        // the same number modulu the order (which is taken care of in `DynResidue`).
         Self(DynResidue::new(scalar, *self.0.params()))
     }
 }
@@ -205,7 +206,7 @@ impl<const LIMBS: usize> Mul<Self> for GroupElement<LIMBS> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0.mul(rhs.0))
+        Self(self.0.mul(&rhs.0))
     }
 }
 
@@ -213,7 +214,7 @@ impl<'r, const LIMBS: usize> Mul<&'r Self> for GroupElement<LIMBS> {
     type Output = Self;
 
     fn mul(self, rhs: &'r Self) -> Self::Output {
-        Self(self.0.mul(rhs.0))
+        Self(self.0.mul(&rhs.0))
     }
 }
 
@@ -221,7 +222,7 @@ impl<'r, const LIMBS: usize> Mul<Self> for &'r GroupElement<LIMBS> {
     type Output = GroupElement<LIMBS>;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        GroupElement(self.0.mul(rhs.0))
+        GroupElement(self.0.mul(&rhs.0))
     }
 }
 
@@ -229,7 +230,7 @@ impl<'r, const LIMBS: usize> Mul<&'r Self> for &'r GroupElement<LIMBS> {
     type Output = GroupElement<LIMBS>;
 
     fn mul(self, rhs: &'r Self) -> Self::Output {
-        GroupElement(self.0.mul(rhs.0))
+        GroupElement(self.0.mul(&rhs.0))
     }
 }
 

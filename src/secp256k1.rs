@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crypto_bigint::U256;
-use k256::{elliptic_curve::Curve, Secp256k1};
-
 pub use group_element::GroupElement;
+use k256::{elliptic_curve::Curve, Secp256k1};
 pub use scalar::Scalar;
 
 pub mod group_element;
