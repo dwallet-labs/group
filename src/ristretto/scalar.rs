@@ -110,7 +110,11 @@ impl From<Scalar> for PublicParameters {
     }
 }
 
-impl BoundedGroupElement<SCALAR_LIMBS> for Scalar {}
+impl BoundedGroupElement<SCALAR_LIMBS> for Scalar {
+    fn lower_bound(public_parameters: &Self::PublicParameters) -> Uint<SCALAR_LIMBS> {
+        Self::order_from_public_parameters(public_parameters)
+    }
+}
 
 impl<const LIMBS: usize> From<Uint<LIMBS>> for Scalar {
     fn from(value: Uint<LIMBS>) -> Self {

@@ -9,7 +9,7 @@ use k256::{
     elliptic_curve::{
         group::prime::PrimeCurveAffine,
         hash2curve::{ExpandMsgXof, GroupDigest},
-        Group,
+        BatchNormalize as _, Group,
     },
     AffinePoint, ProjectivePoint, Secp256k1,
 };
@@ -87,6 +87,26 @@ impl crate::GroupElement for GroupElement {
         // As this group element is valid, it's safe to instantiate a `Value`
         // from the valid affine representation.
         Value(self.0.to_affine())
+    }
+
+    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
+        let projective_points: Vec<_> = group_elements
+            .into_iter()
+            .map(|group_element| group_element.0)
+            .collect();
+
+        k256::ProjectivePoint::batch_normalize(projective_points.as_slice())
+            .into_iter()
+            .map(Value)
+            .collect()
+    }
+
+    fn batch_normalize_const_generic<const N: usize>(
+        group_elements: [Self; N],
+    ) -> [Self::Value; N] {
+        let projective_points = group_elements.map(|group_element| group_element.0);
+        // default to a trivial implementation.
+        k256::ProjectivePoint::batch_normalize(&projective_points).map(Value)
     }
 
     type PublicParameters = PublicParameters;
@@ -217,7 +237,11 @@ impl CyclicGroupElement for GroupElement {
     }
 }
 
-impl BoundedGroupElement<SCALAR_LIMBS> for GroupElement {}
+impl BoundedGroupElement<SCALAR_LIMBS> for GroupElement {
+    fn lower_bound(public_parameters: &Self::PublicParameters) -> Uint<SCALAR_LIMBS> {
+        Self::order_from_public_parameters(public_parameters)
+    }
+}
 
 impl KnownOrderGroupElement<SCALAR_LIMBS> for GroupElement {
     type Scalar = Scalar;

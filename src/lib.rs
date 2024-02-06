@@ -80,11 +80,11 @@ pub trait GroupElement:
 {
     /// The actual value of the group point used for encoding/decoding.
     ///
-    /// For some groups (e.g. [`group::secp256k1::Secp256k1GroupElement`]) the group parameters and
+    /// For some groups (e.g. `group::secp256k1::Secp256k1GroupElement`) the group parameters and
     /// equations are statically hard-coded into the code,
     /// and then they would have `Self::Value = Self`.
     ///
-    /// However, other groups (e.g. [`group::paillier::PaillierCiphertextGroupElement`]) rely on
+    /// However, other groups (e.g. `group::paillier::PaillierCiphertextGroupElement`) rely on
     /// dynamic values to determine group operations in runtime (like the Paillier modulus
     /// $N^2$).
     ///
@@ -105,9 +105,26 @@ pub trait GroupElement:
         + ConditionallySelectable
         + Copy;
 
-    /// Returns the value of this group element
+    /// Returns the value of this group element.
     fn value(&self) -> Self::Value {
         self.clone().into()
+    }
+
+    /// Perform a batched conversion of group elements to their values.
+    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
+        // default to a trivial implementation.
+        group_elements
+            .iter()
+            .map(|group_element| group_element.value())
+            .collect()
+    }
+
+    /// Perform a batched conversion of group elements to their values.
+    fn batch_normalize_const_generic<const N: usize>(
+        group_elements: [Self; N],
+    ) -> [Self::Value; N] {
+        // default to a trivial implementation.
+        group_elements.map(|group_element| group_element.value())
     }
 
     /// The public parameters of the group, used for group operations.
@@ -180,7 +197,10 @@ pub type PublicParameters<G> = <G as GroupElement>::PublicParameters;
 
 /// A marker-trait for an element of an abelian group of bounded (by [`Uint<SCALAR_LIMBS>::MAX`])
 /// order, in additive notation.
-pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {}
+pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {
+    /// Returns a (tight) lower-bound on the scalar group
+    fn lower_bound(public_parameters: &Self::PublicParameters) -> Uint<SCALAR_LIMBS>;
+}
 
 /// An element of a natural numbers group.
 /// This trait encapsulates both known and unknown order number groups, by allowing the group value

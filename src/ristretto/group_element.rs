@@ -223,7 +223,11 @@ impl CyclicGroupElement for GroupElement {
     }
 }
 
-impl BoundedGroupElement<SCALAR_LIMBS> for GroupElement {}
+impl BoundedGroupElement<SCALAR_LIMBS> for GroupElement {
+    fn lower_bound(public_parameters: &Self::PublicParameters) -> Uint<SCALAR_LIMBS> {
+        Self::order_from_public_parameters(public_parameters)
+    }
+}
 
 impl KnownOrderGroupElement<SCALAR_LIMBS> for GroupElement {
     type Scalar = Scalar;
