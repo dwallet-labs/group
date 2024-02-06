@@ -1,7 +1,6 @@
 // Author: dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use crypto_bigint::U256;
-
 pub use group_element::GroupElement;
 pub use scalar::Scalar;
 

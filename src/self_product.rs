@@ -77,9 +77,9 @@ impl<const N: usize, GroupElementValue: Serialize + for<'a> Deserialize<'a> + Co
     ConstantTimeEq for Value<N, GroupElementValue>
 {
     fn ct_eq(&self, other: &Self) -> Choice {
-        // The arrays are of the same size so its safe to `zip` them.
-        // Following that, we get an array of the pairs, and we assure they are all equal to each
-        // other using `ct_eq` between the pairs and `bitand` between the results,
+        // The arrays are of the same size, so it's safe to `zip` them.
+        // Following that, we get an array of the pairs, and we ensure they are all equal to each
+        // other using `ct_eq` between the pairs and `bitand` between the results.
         self.0
             .iter()
             .zip(other.0.iter())
@@ -97,8 +97,8 @@ impl<const N: usize, G: crate::GroupElement> crate::GroupElement for GroupElemen
     fn public_parameters(&self) -> Self::PublicParameters {
         // in [`Self::new()`] we used the same public parameters for all elements, so we just pick
         // the first calling `unwrap()` is safe here because we assure to get at least two
-        // values, i.e. this struct cannot be instantiated for `N == 0`.
-        Self::PublicParameters::new(self.0.first().unwrap().public_parameters())
+        // values, i.e., this struct cannot be instantiated for `N == 0`.
+        PublicParameters::new(self.0.first().unwrap().public_parameters())
     }
 
     fn new(value: Self::Value, public_parameters: &Self::PublicParameters) -> crate::Result<Self> {
