@@ -23,9 +23,9 @@ impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
         // There are two `subtle` crates used across the Rust crypto ecosystem; the
         // original `dalek` one and `zkcrypto`'s fork. The former being most widely used was chosen
-        // for the group traits, wheras the latter is used in the working `zkcrypto`
+        // for the group traits, whereas the latter is used in the working `zkcrypto`
         // `curve25519-dalek-ng` crate used in this code. Therefore, an adaptation between the two
-        // must occur, which is implemented here via unwrapping and wrapping the `u8` inner value of
+        // must-occur, which is implemented here via unwrapping and wrapping the `u8` inner value of
         // `Choice`.
         <curve25519_dalek::scalar::Scalar as subtle_ng::ConstantTimeEq>::ct_eq(&self.0, &other.0)
             .unwrap_u8()
