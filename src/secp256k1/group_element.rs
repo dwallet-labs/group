@@ -5,6 +5,7 @@ use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
 use crypto_bigint::{Uint, U256};
 use k256::elliptic_curve::hash2curve::{ExpandMsgXof, GroupDigest};
+use k256::elliptic_curve::BatchNormalize as _;
 use k256::{
     elliptic_curve,
     elliptic_curve::{group::prime::PrimeCurveAffine, Group},
@@ -85,6 +86,26 @@ impl crate::GroupElement for GroupElement {
         // As this group element is valid, it's safe to instantiate a `Value`
         // from the valid affine representation.
         Value(self.0.to_affine())
+    }
+
+    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
+        let projective_points: Vec<_> = group_elements
+            .into_iter()
+            .map(|group_element| group_element.0)
+            .collect();
+
+        k256::ProjectivePoint::batch_normalize(projective_points.as_slice())
+            .into_iter()
+            .map(Value)
+            .collect()
+    }
+
+    fn batch_normalize_const_generic<const N: usize>(
+        group_elements: [Self; N],
+    ) -> [Self::Value; N] {
+        let projective_points = group_elements.map(|group_element| group_element.0);
+        // default to a trivial implementation.
+        k256::ProjectivePoint::batch_normalize(&projective_points).map(Value)
     }
 
     type PublicParameters = PublicParameters;

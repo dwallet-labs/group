@@ -105,9 +105,26 @@ pub trait GroupElement:
         + ConditionallySelectable
         + Copy;
 
-    /// Returns the value of this group element
+    /// Returns the value of this group element.
     fn value(&self) -> Self::Value {
         self.clone().into()
+    }
+
+    /// Perform a batched conversion of group elements to their values.
+    fn batch_normalize(group_elements: Vec<Self>) -> Vec<Self::Value> {
+        // default to a trivial implementation.
+        group_elements
+            .iter()
+            .map(|group_element| group_element.value())
+            .collect()
+    }
+
+    /// Perform a batched conversion of group elements to their values.
+    fn batch_normalize_const_generic<const N: usize>(
+        group_elements: [Self; N],
+    ) -> [Self::Value; N] {
+        // default to a trivial implementation.
+        group_elements.map(|group_element| group_element.value())
     }
 
     /// The public parameters of the group, used for group operations.
