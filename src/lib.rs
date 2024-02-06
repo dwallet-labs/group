@@ -180,7 +180,10 @@ pub type PublicParameters<G> = <G as GroupElement>::PublicParameters;
 
 /// A marker-trait for  element of an abelian group of bounded (by `Uint<SCALAR_LIMBS>::MAX`) order,
 /// in additive notation.
-pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {}
+pub trait BoundedGroupElement<const SCALAR_LIMBS: usize>: GroupElement {
+    /// Returns a (tight) lower-bound on the scalar group
+    fn lower_bound(public_parameters: &Self::PublicParameters) -> Uint<SCALAR_LIMBS>;
+}
 
 /// An element of a natural numbers group.
 /// This trait encapsulates both known and unknown order number groups, by allowing the group value
