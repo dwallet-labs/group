@@ -3,7 +3,7 @@
 
 use crypto_bigint::{NonZero, Uint};
 
-pub(crate) trait Reduce<const MODULUS_LIMBS: usize> {
+pub trait Reduce<const MODULUS_LIMBS: usize> {
     /// Reduces `self` by `modulus`.
     fn reduce(&self, modulus: &NonZero<Uint<MODULUS_LIMBS>>) -> Uint<MODULUS_LIMBS>;
 }
