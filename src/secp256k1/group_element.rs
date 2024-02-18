@@ -4,6 +4,8 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
 use crypto_bigint::{Uint, U256};
+use k256::elliptic_curve::ops::Reduce;
+use k256::elliptic_curve::point::AffineCoordinates;
 use k256::{
     elliptic_curve,
     elliptic_curve::{
@@ -17,12 +19,13 @@ use serde::{Deserialize, Serialize};
 use sha3::Shake256;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
-use super::SCALAR_LIMBS;
 use crate::{
     secp256k1::{scalar::Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS, ORDER},
-    BoundedGroupElement, CyclicGroupElement, HashToGroup, KnownOrderGroupElement, MulByGenerator,
-    PrimeGroupElement,
+    AffineXCoordinate, BoundedGroupElement, CyclicGroupElement, HashToGroup,
+    KnownOrderGroupElement, MulByGenerator, PrimeGroupElement,
 };
+
+use super::SCALAR_LIMBS;
 
 /// An element of the secp256k1 prime group.
 #[derive(PartialEq, Eq, Clone, Debug, Copy)]
@@ -281,5 +284,15 @@ impl HashToGroup for GroupElement {
         )
         .map_err(|_| crate::Error::HashToGroup)
         .map(Self)
+    }
+}
+
+impl AffineXCoordinate<SCALAR_LIMBS> for GroupElement {
+    fn x(&self) -> Scalar {
+        // Lift x-coordinate of 𝑹 (element of base field) into a serialized big
+        // integer, then reduce it into an element of the scalar field
+        Scalar(<k256::Scalar as Reduce<U256>>::reduce_bytes(
+            &self.0.to_affine().x(),
+        ))
     }
 }

@@ -360,3 +360,9 @@ pub trait HashToGroup: GroupElement {
     /// the generators must be kept hidden.
     fn hash_to_group(bytes: &[u8]) -> Result<Self>;
 }
+
+/// Access to the x affine coordinate of an elliptic curve point, for ECDSA.
+pub trait AffineXCoordinate<const SCALAR_LIMBS: usize>: PrimeGroupElement<SCALAR_LIMBS> {
+    /// Get the affine x-coordinate as a scalar.
+    fn x(&self) -> Self::Scalar;
+}
