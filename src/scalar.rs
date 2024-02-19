@@ -1,6 +1,7 @@
 // Author: dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use std::cmp::Ordering;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
 use crypto_bigint::{rand_core::CryptoRngCore, Uint};
@@ -65,6 +66,12 @@ impl<V: ConstantTimeEq> ConstantTimeEq for Value<V> {
 impl<V: ConditionallySelectable> ConditionallySelectable for Value<V> {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self(V::conditional_select(&a.0, &b.0, choice))
+    }
+}
+
+impl<V: PartialOrd> PartialOrd for Value<V> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp(&other.0)
     }
 }
 

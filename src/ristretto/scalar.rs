@@ -1,6 +1,7 @@
 // Author: dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use std::cmp::Ordering;
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
 use crypto_bigint::{rand_core::CryptoRngCore, Encoding, NonZero, Uint, U256};
@@ -8,11 +9,12 @@ use serde::{Deserialize, Serialize};
 use sha3_old::Sha3_512;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use super::{GroupElement, SCALAR_LIMBS};
 use crate::{
     BoundedGroupElement, CyclicGroupElement, GroupElement as _, HashToGroup, Invert,
     KnownOrderGroupElement, KnownOrderScalar, MulByGenerator, PrimeGroupElement, Reduce, Samplable,
 };
+
+use super::{GroupElement, SCALAR_LIMBS};
 
 /// A Scalar of the prime field $\mathbb{Z}_p$ over which the ristretto prime group is
 /// defined.
@@ -312,6 +314,12 @@ impl CyclicGroupElement for Scalar {
 impl Invert for Scalar {
     fn invert(&self) -> CtOption<Self> {
         CtOption::new(Self(self.0.invert()), !self.is_neutral())
+    }
+}
+
+impl PartialOrd for Scalar {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        U256::from(self).partial_cmp(&U256::from(other))
     }
 }
 
