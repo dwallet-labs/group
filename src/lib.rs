@@ -228,6 +228,7 @@ pub trait NumbersGroupElement<const SCALAR_LIMBS: usize>:
         + Clone
         + Debug
         + PartialEq
+        + PartialOrd
         + ConstantTimeEq
         + ConditionallySelectable
         + Copy;
@@ -238,7 +239,7 @@ impl<
         T: GroupElement + BoundedGroupElement<SCALAR_LIMBS> + Into<Uint<SCALAR_LIMBS>> + Samplable,
     > NumbersGroupElement<SCALAR_LIMBS> for T
 where
-    T::Value: From<Uint<SCALAR_LIMBS>> + Into<Uint<SCALAR_LIMBS>>,
+    T::Value: From<Uint<SCALAR_LIMBS>> + Into<Uint<SCALAR_LIMBS>> + PartialOrd,
 {
     type ValueExt = Self::Value;
 }
