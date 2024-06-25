@@ -1,4 +1,4 @@
-# Group
+# group
 
 Group traits for abelian groups in additive notation, designed to resemble the cryptographic/mathematics definition as
 accurately as possible.
